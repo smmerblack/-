@@ -5,7 +5,6 @@ advertisements in iOS apps. This third test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
-- 中国移动 12.x (`cn.10086.app`)
 
 The target test environment is iOS 17.0 with TrollStore or self-signed IPA
 injection. The dylib itself supports iOS 13.0 and later.
