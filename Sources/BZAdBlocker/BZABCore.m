@@ -1,7 +1,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 
-NSString * const BZABVersion = @"0.3.0-test3";
+NSString * const BZABVersion = @"0.4.0-test4";
 
 static NSString * const BZABEnabledKey = @"BZAdBlocker.Enabled";
 static NSString * const BZABNetworkKey = @"BZAdBlocker.Network";

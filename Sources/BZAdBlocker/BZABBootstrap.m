@@ -1,3 +1,4 @@
+#import "BZABCMCCBlocker.h"
 #import "BZABCore.h"
 #import "BZABMenuController.h"
 #import "BZABNetworkBlocker.h"
@@ -8,6 +9,7 @@ __attribute__((constructor))
 static void BZABBootstrap(void) {
     @autoreleasepool {
         (void)BZABSettings.sharedSettings;
+        [BZABCMCCBlocker install];
         [BZABSDKBlocker install];
         [BZABNetworkBlocker install];
         [BZABViewBlocker install];

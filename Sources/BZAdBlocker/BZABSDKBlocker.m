@@ -1,4 +1,5 @@
 #import "BZABSDKBlocker.h"
+#import "BZABCMCCBlocker.h"
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 #import <objc/message.h>
@@ -294,6 +295,7 @@ static void BZABHookStartupAdClass(Class cls) {
 }
 
 + (void)refreshHooks {
+    [BZABCMCCBlocker refreshHooks];
     CFTimeInterval now = CACurrentMediaTime();
     if (BZABLastHookRefresh > 0 && now - BZABLastHookRefresh < 0.75) {
         return;

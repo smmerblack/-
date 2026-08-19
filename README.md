@@ -1,10 +1,11 @@
-# BZAdBlocker test3
+# BZAdBlocker test4
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This third test build combines a conservative
+advertisements in iOS apps. This fourth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
+- 中国移动 12.x (`cn.10086.app`)
 
 The target test environment is iOS 17.0 with TrollStore or self-signed IPA
 injection. The dylib itself supports iOS 13.0 and later.
@@ -23,6 +24,9 @@ injection. The dylib itself supports iOS 13.0 and later.
   background, covering resume ads without continuously scanning normal pages.
 - Allows reused skip controls and SDK objects to be handled once per suppression
   cycle instead of only once for the entire process lifetime.
+- Uses China Mobile's own `CMStartViewController` skip decision and presentation
+  entry points so the app advances immediately instead of leaving a five-second
+  blank startup controller after the ad view is removed.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the

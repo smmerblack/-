@@ -3,7 +3,9 @@ name: Build iOS dylib
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
+      - "agent/**"
 
 jobs:
   build:
@@ -20,6 +22,6 @@ jobs:
       - name: Upload test dylib
         uses: actions/upload-artifact@v4
         with:
-          name: BZAdBlocker-test3
+          name: BZAdBlocker-test4
           path: build/BZAdBlocker.dylib
           if-no-files-found: error

@@ -20,6 +20,7 @@ def main() -> None:
         ROOT / "NOTICE.md",
         ROOT / "Makefile",
         ROOT / "Sources/BZAdBlocker/BZABBootstrap.m",
+        ROOT / "Sources/BZAdBlocker/BZABCMCCBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABCore.m",
         ROOT / "Sources/BZAdBlocker/BZABNetworkBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABSDKBlocker.m",
@@ -54,7 +55,7 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.3.0-test3"',
+        'NSString * const BZABVersion = @"0.4.0-test4"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"pangolin-sdk-toutiao.com"',
@@ -63,6 +64,9 @@ def main() -> None:
         'UIApplicationWillEnterForegroundNotification',
         'BZABExtendSuppressionWindow',
         'BZABCurrentSuppressionGeneration',
+        'CMStartViewController',
+        'showADWithDataDict:videoUrlStr:',
+        'isNeedSkipStartAd',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
     ]:
@@ -94,7 +98,7 @@ def main() -> None:
 
     print(
         f"validated {len(objc_files)} Objective-C files; "
-        "profiles=com.sina,cn.10086.app; version=0.3.0-test3"
+        "profiles=com.sina,cn.10086.app; version=0.4.0-test4"
     )
 
 
