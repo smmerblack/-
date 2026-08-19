@@ -136,7 +136,7 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
             [BZMenuItem valueItem:@"sdk.last" title:@"最后发现 SDK" value:stats.lastDetectedSDKClass ?: @"暂无"],
             [BZMenuItem valueItem:@"last.action" title:@"最后处理" value:stats.lastBlockedClass ?: @"暂无"],
             version,
-            [BZMenuItem noteItem:@"hint" text:@"三指双击打开本菜单。第二版会直接拦截常见开屏 SDK，并在启动阶段自动触发“跳过”。若页面异常，请切换到“安全”强度并重启 App。"]
+            [BZMenuItem noteItem:@"hint" text:@"三指双击打开本菜单。第三版会在冷启动及从后台返回后的 8 秒内拦截常见开屏 SDK，并自动触发“跳过”。若页面异常，请切换到“安全”强度并重启 App。"]
         ]]
     ];
     return configuration;
@@ -194,7 +194,7 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
 - (void)menuPanel:(BZMenuPanel *)panel didTapItem:(BZMenuItem *)item {
     if ([item.identifier isEqualToString:@"rescan"]) {
         [BZABViewBlocker.sharedBlocker rescanForDuration:BZABSettings.sharedSettings.suppressionDuration];
-        [BZMenuToast show:@"已重新扫描启动广告"];
+        [BZMenuToast show:@"已重新扫描广告界面"];
         [panel reloadRows];
     }
 }

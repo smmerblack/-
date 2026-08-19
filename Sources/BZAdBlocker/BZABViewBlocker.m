@@ -77,10 +77,14 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
 @interface BZABViewBlocker ()
 @property (nonatomic, strong, nullable) NSTimer *scanTimer;
 @property (nonatomic, assign) CFTimeInterval scanDeadline;
+@property (nonatomic, assign) BOOL observedBackground;
+@property (nonatomic, assign) CFTimeInterval lastForegroundRestart;
 - (void)evaluateView:(UIView *)view;
 - (void)evaluateViewController:(UIViewController *)viewController;
 - (BOOL)activateSkipControlInViewTree:(UIView *)view;
 - (BOOL)activateSkipControlAtView:(UIView *)view;
+- (void)applicationDidEnterBackground:(NSNotification *)notification;
+- (void)applicationWillEnterForeground:(NSNotification *)notification;
 @end
 
 @interface UIView (BZAdBlocker)
@@ -159,8 +163,51 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
         BZABExchangeInstanceMethod(UIViewController.class,
                                    @selector(presentViewController:animated:completion:),
                                    @selector(bzab_presentViewController:animated:completion:));
+        BZABViewBlocker *blocker = BZABViewBlocker.sharedBlocker;
+        NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
+        [center addObserver:blocker
+                   selector:@selector(applicationDidEnterBackground:)
+                       name:UIApplicationDidEnterBackgroundNotification
+                     object:nil];
+        [center addObserver:blocker
+                   selector:@selector(applicationWillEnterForeground:)
+                       name:UIApplicationWillEnterForegroundNotification
+                     object:nil];
+        if (@available(iOS 13.0, *)) {
+            [center addObserver:blocker
+                       selector:@selector(applicationDidEnterBackground:)
+                           name:UISceneDidEnterBackgroundNotification
+                         object:nil];
+            [center addObserver:blocker
+                       selector:@selector(applicationWillEnterForeground:)
+                           name:UISceneWillEnterForegroundNotification
+                         object:nil];
+        }
         BZABLog(@"view blocker installed");
     });
+}
+
+- (void)applicationDidEnterBackground:(NSNotification *)notification {
+    (void)notification;
+    self.observedBackground = YES;
+}
+
+- (void)applicationWillEnterForeground:(NSNotification *)notification {
+    (void)notification;
+    if (!self.observedBackground) {
+        return;
+    }
+    self.observedBackground = NO;
+
+    CFTimeInterval now = CACurrentMediaTime();
+    if (self.lastForegroundRestart > 0 && now - self.lastForegroundRestart < 0.75) {
+        return;
+    }
+    self.lastForegroundRestart = now;
+
+    NSTimeInterval duration = BZABProfile.currentProfile.resumeSuppressionDuration;
+    BZABLog(@"foreground resume suppression duration=%.1f", duration);
+    [self rescanForDuration:duration];
 }
 
 - (BOOL)shouldSuppressObject:(id)object {
@@ -193,9 +240,11 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
 }
 
 - (void)rescanForDuration:(NSTimeInterval)duration {
+    NSTimeInterval boundedDuration = MAX(1.0, MIN(30.0, duration));
+    BZABExtendSuppressionWindow(boundedDuration);
     dispatch_async(dispatch_get_main_queue(), ^{
         [self.scanTimer invalidate];
-        self.scanDeadline = CACurrentMediaTime() + MAX(1.0, MIN(30.0, duration));
+        self.scanDeadline = CACurrentMediaTime() + boundedDuration;
         self.scanTimer = [NSTimer scheduledTimerWithTimeInterval:0.25
                                                           target:self
                                                         selector:@selector(scanTick:)
@@ -331,7 +380,9 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
     if (!BZABTextMeansSkip(text)) {
         return NO;
     }
-    if (objc_getAssociatedObject(view, BZABSkipActivatedKey)) {
+    NSUInteger generation = BZABCurrentSuppressionGeneration();
+    NSNumber *activatedGeneration = objc_getAssociatedObject(view, BZABSkipActivatedKey);
+    if (activatedGeneration.unsignedIntegerValue == generation) {
         return NO;
     }
     if (settings.blockingMode == BZABBlockingModeSafe &&
@@ -341,8 +392,9 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
 
     UIControl *control = [self controlForSkipView:view];
     if (control && control.enabled && !control.hidden && control.alpha > 0.01) {
-        objc_setAssociatedObject(view, BZABSkipActivatedKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-        objc_setAssociatedObject(control, BZABSkipActivatedKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        NSNumber *generationValue = @(generation);
+        objc_setAssociatedObject(view, BZABSkipActivatedKey, generationValue, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(control, BZABSkipActivatedKey, generationValue, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         [control sendActionsForControlEvents:UIControlEventTouchUpInside];
         NSString *event = [NSString stringWithFormat:@"%@.skip-control", BZABClassName(control)];
         [BZABStats.sharedStats recordTriggeredSkipWithClass:event];
@@ -353,7 +405,7 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
     UIView *candidate = view;
     for (NSUInteger depth = 0; candidate && depth < 5; depth++) {
         if ([candidate accessibilityActivate]) {
-            objc_setAssociatedObject(view, BZABSkipActivatedKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+            objc_setAssociatedObject(view, BZABSkipActivatedKey, @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
             NSString *event = [NSString stringWithFormat:@"%@.accessibility-skip", BZABClassName(candidate)];
             [BZABStats.sharedStats recordTriggeredSkipWithClass:event];
             BZABLog(@"activated accessibility skip class=%@ text=%@", BZABClassName(candidate), text);
@@ -364,7 +416,7 @@ static UIWindow *BZABRootWindowForView(UIView *view) {
 
     UIView *overlay = [self overlayAncestorForSkipView:view];
     if (overlay) {
-        objc_setAssociatedObject(view, BZABSkipActivatedKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        objc_setAssociatedObject(view, BZABSkipActivatedKey, @(generation), OBJC_ASSOCIATION_RETAIN_NONATOMIC);
         NSString *event = [NSString stringWithFormat:@"%@.skip-overlay", BZABClassName(overlay)];
         [BZABStats.sharedStats recordTriggeredSkipWithClass:event];
         overlay.userInteractionEnabled = NO;

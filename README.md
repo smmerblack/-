@@ -1,7 +1,7 @@
-# BZAdBlocker test2
+# BZAdBlocker test3
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This second test build combines a conservative
+advertisements in iOS apps. This third test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
@@ -20,6 +20,10 @@ injection. The dylib itself supports iOS 13.0 and later.
   activates them even when the surrounding class name is obfuscated.
 - Suppresses recognizable splash-ad views and presented view controllers during
   a bounded startup window.
+- Reopens an 8-second suppression window whenever the app returns from the
+  background, covering resume ads without continuously scanning normal pages.
+- Allows reused skip controls and SDK objects to be handled once per suppression
+  cycle instead of only once for the entire process lifetime.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the

@@ -18,6 +18,7 @@ typedef NS_ENUM(NSInteger, BZABBlockingMode) {
 @property (nonatomic, copy) NSArray<NSString *> *firstPartyDomains;
 @property (nonatomic, copy) NSArray<NSString *> *firstPartyAdPathNeedles;
 @property (nonatomic, assign) NSTimeInterval defaultSuppressionDuration;
+@property (nonatomic, assign) NSTimeInterval resumeSuppressionDuration;
 
 + (instancetype)currentProfile;
 
@@ -60,6 +61,8 @@ FOUNDATION_EXPORT BOOL BZABStringContainsAnyNeedle(NSString *value, NSArray<NSSt
 FOUNDATION_EXPORT NSSet<NSString *> *BZABCustomBlockedDomains(void);
 FOUNDATION_EXPORT NSTimeInterval BZABElapsedSinceLoad(void);
 FOUNDATION_EXPORT BOOL BZABIsInsideSuppressionWindow(void);
+FOUNDATION_EXPORT void BZABExtendSuppressionWindow(NSTimeInterval duration);
+FOUNDATION_EXPORT NSUInteger BZABCurrentSuppressionGeneration(void);
 FOUNDATION_EXPORT void BZABLog(NSString *format, ...) NS_FORMAT_FUNCTION(1, 2);
 
 NS_ASSUME_NONNULL_END

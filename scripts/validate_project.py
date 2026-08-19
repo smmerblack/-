@@ -54,12 +54,15 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.2.0-test2"',
+        'NSString * const BZABVersion = @"0.3.0-test3"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"pangolin-sdk-toutiao.com"',
         '@"1rtb.com"',
         'recordTriggeredSkipWithClass',
+        'UIApplicationWillEnterForegroundNotification',
+        'BZABExtendSuppressionWindow',
+        'BZABCurrentSuppressionGeneration',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
     ]:
@@ -91,7 +94,7 @@ def main() -> None:
 
     print(
         f"validated {len(objc_files)} Objective-C files; "
-        "profiles=com.sina,cn.10086.app; version=0.2.0-test2"
+        "profiles=com.sina,cn.10086.app; version=0.3.0-test3"
     )
 
 

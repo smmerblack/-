@@ -75,12 +75,17 @@ static id _Nullable BZABDelegateForObject(id object) {
 }
 
 static void BZABNotifySDKClosed(id splashObject, SEL blockedSelector) {
-    if (!splashObject || objc_getAssociatedObject(splashObject, BZABSDKSuppressedKey)) {
+    if (!splashObject) {
+        return;
+    }
+    NSUInteger generation = BZABCurrentSuppressionGeneration();
+    NSNumber *suppressedGeneration = objc_getAssociatedObject(splashObject, BZABSDKSuppressedKey);
+    if (suppressedGeneration.unsignedIntegerValue == generation) {
         return;
     }
     objc_setAssociatedObject(splashObject,
                              BZABSDKSuppressedKey,
-                             @YES,
+                             @(generation),
                              OBJC_ASSOCIATION_RETAIN_NONATOMIC);
 
     NSString *className = NSStringFromClass([splashObject class]);

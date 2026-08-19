@@ -1,7 +1,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 
-NSString * const BZABVersion = @"0.2.0-test2";
+NSString * const BZABVersion = @"0.3.0-test3";
 
 static NSString * const BZABEnabledKey = @"BZAdBlocker.Enabled";
 static NSString * const BZABNetworkKey = @"BZAdBlocker.Network";
@@ -10,6 +10,8 @@ static NSString * const BZABLoggingKey = @"BZAdBlocker.Logging";
 static NSString * const BZABModeKey = @"BZAdBlocker.Mode";
 static NSString * const BZABDurationKey = @"BZAdBlocker.Duration";
 static CFTimeInterval BZABLoadTime = 0;
+static CFTimeInterval BZABSuppressionDeadline = 0;
+static NSUInteger BZABSuppressionGeneration = 0;
 
 @implementation BZABProfile
 
@@ -21,6 +23,7 @@ static CFTimeInterval BZABLoadTime = 0;
     profile.firstPartyDomains = @[];
     profile.firstPartyAdPathNeedles = @[];
     profile.defaultSuppressionDuration = 12.0;
+    profile.resumeSuppressionDuration = 8.0;
     return profile;
 }
 
@@ -42,6 +45,7 @@ static CFTimeInterval BZABLoadTime = 0;
             @"/advert/", @"/advertise/", @"/popup-ad"
         ];
         sina.defaultSuppressionDuration = 20.0;
+        sina.resumeSuppressionDuration = 8.0;
 
         BZABProfile *cmcc = [[BZABProfile alloc] init];
         cmcc.name = @"中国移动 12.x";
@@ -57,6 +61,7 @@ static CFTimeInterval BZABLoadTime = 0;
             @"/advert/", @"/advertise/", @"/popup-ad", @"/home-popup"
         ];
         cmcc.defaultSuppressionDuration = 20.0;
+        cmcc.resumeSuppressionDuration = 8.0;
         profiles = @[sina, cmcc];
     });
     return profiles;
@@ -80,14 +85,20 @@ static CFTimeInterval BZABLoadTime = 0;
     static BZABSettings *settings;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        BZABLoadTime = CACurrentMediaTime();
+        BZABProfile *profile = [BZABProfile currentProfile];
+        CFTimeInterval now = CACurrentMediaTime();
+        @synchronized (BZABSettings.class) {
+            BZABLoadTime = now;
+            BZABSuppressionDeadline = now + profile.defaultSuppressionDuration;
+            BZABSuppressionGeneration = 1;
+        }
         [NSUserDefaults.standardUserDefaults registerDefaults:@{
             BZABEnabledKey: @YES,
             BZABNetworkKey: @YES,
             BZABViewsKey: @YES,
             BZABLoggingKey: @NO,
             BZABModeKey: @(BZABBlockingModeBalanced),
-            BZABDurationKey: @([BZABProfile currentProfile].defaultSuppressionDuration),
+            BZABDurationKey: @(profile.defaultSuppressionDuration),
         }];
         settings = [[BZABSettings alloc] init];
     });
@@ -256,14 +267,40 @@ NSSet<NSString *> *BZABCustomBlockedDomains(void) {
 }
 
 NSTimeInterval BZABElapsedSinceLoad(void) {
-    if (BZABLoadTime <= 0) {
-        BZABLoadTime = CACurrentMediaTime();
+    (void)BZABSettings.sharedSettings;
+    CFTimeInterval loadTime;
+    @synchronized (BZABSettings.class) {
+        loadTime = BZABLoadTime;
     }
-    return CACurrentMediaTime() - BZABLoadTime;
+    return MAX(0.0, CACurrentMediaTime() - loadTime);
 }
 
 BOOL BZABIsInsideSuppressionWindow(void) {
-    return BZABElapsedSinceLoad() <= BZABSettings.sharedSettings.suppressionDuration;
+    (void)BZABSettings.sharedSettings;
+    CFTimeInterval deadline;
+    @synchronized (BZABSettings.class) {
+        deadline = BZABSuppressionDeadline;
+    }
+    return CACurrentMediaTime() <= deadline;
+}
+
+void BZABExtendSuppressionWindow(NSTimeInterval duration) {
+    (void)BZABSettings.sharedSettings;
+    NSTimeInterval boundedDuration = MAX(1.0, MIN(30.0, duration));
+    CFTimeInterval requestedDeadline = CACurrentMediaTime() + boundedDuration;
+    @synchronized (BZABSettings.class) {
+        BZABSuppressionDeadline = MAX(BZABSuppressionDeadline, requestedDeadline);
+        BZABSuppressionGeneration += 1;
+    }
+}
+
+NSUInteger BZABCurrentSuppressionGeneration(void) {
+    (void)BZABSettings.sharedSettings;
+    NSUInteger generation;
+    @synchronized (BZABSettings.class) {
+        generation = BZABSuppressionGeneration;
+    }
+    return generation;
 }
 
 void BZABLog(NSString *format, ...) {
