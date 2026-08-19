@@ -1,0 +1,25 @@
+name: Build iOS dylib
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Apple toolchain
+        run: |
+          xcode-select -p
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-version
+      - name: Build
+        run: ./build.sh
+      - name: Upload test dylib
+        uses: actions/upload-artifact@v4
+        with:
+          name: BZAdBlocker-test2
+          path: build/BZAdBlocker.dylib
+          if-no-files-found: error

@@ -1,0 +1,5 @@
+# Optional custom blocklist. Use one domain per line without scheme or path.
+# Rename to BZAdBlockerRules.txt and place it in the target app bundle before
+# signing. These examples are intentionally non-routable.
+ads.example.invalid
+startup-ad.example.invalid

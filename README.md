@@ -36,8 +36,8 @@ Xcode with the iPhoneOS SDK is required. From Terminal on macOS:
 ```
 
 The output is `build/BZAdBlocker.dylib`. The included GitHub Actions workflow
-selects Xcode 26.3 before building because upstream BZMenuKit references the
-iOS 26 glass API while retaining an iOS 13 deployment target.
+uses GitHub's `macos-26` runner so the iOS 26 glass API referenced by upstream
+BZMenuKit is available while retaining an iOS 13 deployment target.
 
 ## Injection
 
