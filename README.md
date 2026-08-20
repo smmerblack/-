@@ -1,7 +1,7 @@
-# BZAdBlocker test4
+# BZAdBlocker test5
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This fourth test build combines a conservative
+advertisements in iOS apps. This fifth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
@@ -27,6 +27,9 @@ injection. The dylib itself supports iOS 13.0 and later.
 - Uses China Mobile's own `CMStartViewController` skip decision and presentation
   entry points so the app advances immediately instead of leaving a five-second
   blank startup controller after the ad view is removed.
+- Enables a China Mobile native fast path when both exact hooks are available.
+  This path skips the generic network protocol, runtime class enumeration, and
+  repeated view-tree scans; other apps retain the full generic engine.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the
@@ -56,6 +59,10 @@ standalone.
 Start with the default **平衡** mode. If login, mail, billing, recharge, or other
 core functions fail, switch to **安全** and restart the app. Follow
 `TEST-CHECKLIST.md` for the two initial apps.
+
+For China Mobile, the native fast path is intentionally limited to startup-ad
+suppression. Its generic network and UI scanners are not installed, reducing
+launch overhead and avoiding advertisement-response timing delays.
 
 ## Custom domains
 

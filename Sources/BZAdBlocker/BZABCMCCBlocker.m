@@ -104,18 +104,33 @@ static BOOL BZABCMCCIsNeedSkipStartAd(id object, SEL selector) {
 
 @implementation BZABCMCCBlocker
 
-+ (void)install {
++ (BOOL)install {
     if (!BZABCMCCIsTargetApplication()) {
-        return;
+        return NO;
     }
 
     [self refreshHooks];
+    if ([self nativeFastPathReady]) {
+        return YES;
+    }
+
     for (NSNumber *delay in @[@0.25, @1.0, @2.0, @4.0]) {
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
                                      (int64_t)(delay.doubleValue * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [self refreshHooks];
         });
+    }
+    return NO;
+}
+
++ (BOOL)isTargetApplication {
+    return BZABCMCCIsTargetApplication();
+}
+
++ (BOOL)nativeFastPathReady {
+    @synchronized (self) {
+        return BZABCMCCShowADHooked && BZABCMCCNeedSkipHooked;
     }
 }
 

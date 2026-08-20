@@ -4,8 +4,10 @@ NS_ASSUME_NONNULL_BEGIN
 
 @interface BZABCMCCBlocker : NSObject
 
-+ (void)install;
++ (BOOL)install;
 + (void)refreshHooks;
++ (BOOL)isTargetApplication;
++ (BOOL)nativeFastPathReady;
 
 @end
 

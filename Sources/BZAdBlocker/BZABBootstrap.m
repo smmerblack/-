@@ -9,19 +9,27 @@ __attribute__((constructor))
 static void BZABBootstrap(void) {
     @autoreleasepool {
         (void)BZABSettings.sharedSettings;
-        [BZABCMCCBlocker install];
-        [BZABSDKBlocker install];
-        [BZABNetworkBlocker install];
-        [BZABViewBlocker install];
+        BOOL nativeFastPath = [BZABCMCCBlocker install];
+        if (!nativeFastPath) {
+            [BZABSDKBlocker install];
+            [BZABNetworkBlocker install];
+            [BZABViewBlocker install];
+        }
 
-        dispatch_async(dispatch_get_main_queue(), ^{
+        NSTimeInterval setupDelay = nativeFastPath ? 1.0 : 0.0;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
+                                     (int64_t)(setupDelay * NSEC_PER_SEC)),
+                       dispatch_get_main_queue(), ^{
             [BZABMenuController.sharedController installGestureEntry];
-            [BZABViewBlocker.sharedBlocker startSuppressionScan];
+            if (!nativeFastPath) {
+                [BZABViewBlocker.sharedBlocker startSuppressionScan];
+            }
             BZABProfile *profile = BZABProfile.currentProfile;
-            BZABLog(@"loaded version=%@ bundle=%@ profile=%@",
+            BZABLog(@"loaded version=%@ bundle=%@ profile=%@ nativeFastPath=%d",
                     BZABVersion,
                     NSBundle.mainBundle.bundleIdentifier ?: @"unknown",
-                    profile.name);
+                    profile.name,
+                    nativeFastPath);
         });
     }
 }

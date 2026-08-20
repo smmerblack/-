@@ -8,7 +8,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 - Sina Mail: version 3.3.16, expected bundle ID `com.sina`
 - China Mobile: version 12.x, expected bundle ID `cn.10086.app`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.4.0-test4`
+- Expected menu version: `0.5.0-test5`
 
 ## Test each app
 
@@ -17,7 +17,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 3. Inject the dylib, re-sign the IPA, install it, and launch it three times.
 4. Confirm the startup advertisement no longer appears or is skipped quickly.
 5. For China Mobile, confirm its main tab appears immediately without the former
-   five-second white screen.
+   five-second white screen, and compare its entry time with test4.
 6. Leave the app open for at least 30 seconds, switch to another app, wait five
    seconds, and return. Repeat three times and confirm the resume ad is skipped.
 7. Confirm account login still works.
@@ -25,6 +25,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 9. For China Mobile, open balance, bill, recharge, order, and customer-service pages.
 10. Three-finger double-tap anywhere to open the settings panel.
 11. Confirm **已触发跳过** or **已清理界面** increases when an ad is suppressed.
+12. In China Mobile, confirm **当前规则** reads **中国移动原生快速通道**.
 
 ## If a page fails
 
