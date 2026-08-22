@@ -4,10 +4,17 @@
 #import <string.h>
 
 static const void *BZABCMCCRecordedGenerationKey = &BZABCMCCRecordedGenerationKey;
-static IMP _Nullable BZABCMCCOriginalShowAD;
+static const void *BZABCMCCDirectEntryPendingKey = &BZABCMCCDirectEntryPendingKey;
+static IMP _Nullable BZABCMCCOriginalLegacyShowAD;
+static IMP _Nullable BZABCMCCOriginalCurrentShowAD;
+static IMP _Nullable BZABCMCCOriginalShowADContent;
 static IMP _Nullable BZABCMCCOriginalNeedSkip;
-static BOOL BZABCMCCShowADHooked;
+static IMP _Nullable BZABCMCCOriginalAddStartInitTimer;
+static BOOL BZABCMCCLegacyShowADHooked;
+static BOOL BZABCMCCCurrentShowADHooked;
+static BOOL BZABCMCCShowADContentHooked;
 static BOOL BZABCMCCNeedSkipHooked;
+static BOOL BZABCMCCDirectEntryTimerHooked;
 
 static BOOL BZABCMCCIsTargetApplication(void) {
     return [NSBundle.mainBundle.bundleIdentifier isEqualToString:@"cn.10086.app"];
@@ -71,21 +78,116 @@ static void BZABCMCCRecordSkipOnce(id object, NSString *eventName) {
     [BZABStats.sharedStats recordTriggeredSkipWithClass:eventName];
 }
 
-static void BZABCMCCShowAD(id object,
-                           SEL selector,
-                           id dataDictionary,
-                           id videoURLString) {
-    if (BZABCMCCShouldSkipStartupAd()) {
-        BZABCMCCRecordSkipOnce(object, @"CMStartViewController.native-show-blocked");
-        BZABLog(@"blocked native China Mobile startup-ad presentation");
+static BOOL BZABCMCCInvokeVoidSelector(id object, NSString *selectorName) {
+    SEL selector = NSSelectorFromString(selectorName);
+    if (![object respondsToSelector:selector]) {
+        return NO;
+    }
+    IMP implementation = [object methodForSelector:selector];
+    if (!implementation) {
+        return NO;
+    }
+    ((void (*)(id, SEL))implementation)(object, selector);
+    return YES;
+}
+
+static void BZABCMCCEnterMainPage(id object, NSString *eventName) {
+    if (!BZABCMCCShouldSkipStartupAd()) {
         return;
     }
 
-    if (BZABCMCCOriginalShowAD) {
-        ((void (*)(id, SEL, id, id))BZABCMCCOriginalShowAD)(object,
-                                                            selector,
-                                                            dataDictionary,
-                                                            videoURLString);
+    BZABCMCCRecordSkipOnce(object, eventName);
+    (void)BZABCMCCInvokeVoidSelector(object, @"cancelTimer");
+    if (!BZABCMCCInvokeVoidSelector(object, @"skipStartViewAndEnterMainPage")) {
+        (void)BZABCMCCInvokeVoidSelector(object, @"startViewFinished");
+    }
+    BZABLog(@"advanced China Mobile through its native startup completion path");
+}
+
+static void BZABCMCCScheduleDirectEntry(id object) {
+    if (objc_getAssociatedObject(object, BZABCMCCDirectEntryPendingKey)) {
+        return;
+    }
+    objc_setAssociatedObject(object,
+                             BZABCMCCDirectEntryPendingKey,
+                             @YES,
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    dispatch_async(dispatch_get_main_queue(), ^{
+        objc_setAssociatedObject(object,
+                                 BZABCMCCDirectEntryPendingKey,
+                                 nil,
+                                 OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+        BZABCMCCEnterMainPage(object, @"CMStartViewController.direct-entry");
+    });
+}
+
+static void BZABCMCCLegacyShowAD(id object,
+                                 SEL selector,
+                                 id dataDictionary,
+                                 id videoURLString) {
+    if (BZABCMCCShouldSkipStartupAd()) {
+        BZABCMCCEnterMainPage(object, @"CMStartViewController.legacy-show-skip");
+        return;
+    }
+
+    if (BZABCMCCOriginalLegacyShowAD) {
+        ((void (*)(id, SEL, id, id))BZABCMCCOriginalLegacyShowAD)(object,
+                                                                  selector,
+                                                                  dataDictionary,
+                                                                  videoURLString);
+    }
+}
+
+static void BZABCMCCCurrentShowAD(id object,
+                                  SEL selector,
+                                  id data,
+                                  id videoPath) {
+    if (BZABCMCCShouldSkipStartupAd()) {
+        BZABCMCCEnterMainPage(object, @"CMStartViewController.current-show-skip");
+        return;
+    }
+
+    if (BZABCMCCOriginalCurrentShowAD) {
+        ((void (*)(id, SEL, id, id))BZABCMCCOriginalCurrentShowAD)(object,
+                                                                   selector,
+                                                                   data,
+                                                                   videoPath);
+    }
+}
+
+static void BZABCMCCShowADContent(id object,
+                                  SEL selector,
+                                  id contentView,
+                                  double duration) {
+    if (BZABCMCCShouldSkipStartupAd()) {
+        BZABCMCCEnterMainPage(object, @"CMStartViewController.content-show-skip");
+        return;
+    }
+
+    if (BZABCMCCOriginalShowADContent) {
+        ((void (*)(id, SEL, id, double))BZABCMCCOriginalShowADContent)(object,
+                                                                       selector,
+                                                                       contentView,
+                                                                       duration);
+    }
+}
+
+static void BZABCMCCAddStartInitTimer(id object, SEL selector) {
+    if (BZABCMCCShouldSkipStartupAd()) {
+        // In China Mobile 12.5.2 this method is called immediately before
+        // homeViewWillStart:. Keep its lightweight state/timer initialization,
+        // then cancel that timer on the next main-queue turn and use the app's
+        // own startup-completion path without waiting for it to fire.
+        if (BZABCMCCOriginalAddStartInitTimer) {
+            ((void (*)(id, SEL))BZABCMCCOriginalAddStartInitTimer)(object,
+                                                                   selector);
+        }
+        BZABCMCCScheduleDirectEntry(object);
+        return;
+    }
+
+    if (BZABCMCCOriginalAddStartInitTimer) {
+        ((void (*)(id, SEL))BZABCMCCOriginalAddStartInitTimer)(object, selector);
     }
 }
 
@@ -130,13 +232,16 @@ static BOOL BZABCMCCIsNeedSkipStartAd(id object, SEL selector) {
 
 + (BOOL)nativeFastPathReady {
     @synchronized (self) {
-        return BZABCMCCShowADHooked && BZABCMCCNeedSkipHooked;
+        BOOL hasPresentationHook = BZABCMCCLegacyShowADHooked ||
+                                   BZABCMCCCurrentShowADHooked ||
+                                   BZABCMCCShowADContentHooked;
+        return BZABCMCCNeedSkipHooked &&
+               (BZABCMCCDirectEntryTimerHooked || hasPresentationHook);
     }
 }
 
 + (void)refreshHooks {
-    if (!BZABCMCCIsTargetApplication() ||
-        (BZABCMCCShowADHooked && BZABCMCCNeedSkipHooked)) {
+    if (!BZABCMCCIsTargetApplication()) {
         return;
     }
 
@@ -147,16 +252,42 @@ static BOOL BZABCMCCIsNeedSkipStartAd(id object, SEL selector) {
         }
 
         BOOL installedAnyHook = NO;
-        if (!BZABCMCCShowADHooked) {
+        if (!BZABCMCCLegacyShowADHooked) {
             SEL selector = NSSelectorFromString(@"showADWithDataDict:videoUrlStr:");
             Method method = class_getInstanceMethod(startViewController, selector);
             if (BZABCMCCMethodMatches(method, 4, "v")) {
-                BZABCMCCOriginalShowAD = BZABCMCCReplaceInstanceMethod(
+                BZABCMCCOriginalLegacyShowAD = BZABCMCCReplaceInstanceMethod(
                     startViewController,
                     selector,
-                    (IMP)BZABCMCCShowAD);
-                BZABCMCCShowADHooked = BZABCMCCOriginalShowAD != NULL;
-                installedAnyHook = installedAnyHook || BZABCMCCShowADHooked;
+                    (IMP)BZABCMCCLegacyShowAD);
+                BZABCMCCLegacyShowADHooked = BZABCMCCOriginalLegacyShowAD != NULL;
+                installedAnyHook = installedAnyHook || BZABCMCCLegacyShowADHooked;
+            }
+        }
+
+        if (!BZABCMCCCurrentShowADHooked) {
+            SEL selector = NSSelectorFromString(@"showADWithData:videoPath:");
+            Method method = class_getInstanceMethod(startViewController, selector);
+            if (BZABCMCCMethodMatches(method, 4, "v")) {
+                BZABCMCCOriginalCurrentShowAD = BZABCMCCReplaceInstanceMethod(
+                    startViewController,
+                    selector,
+                    (IMP)BZABCMCCCurrentShowAD);
+                BZABCMCCCurrentShowADHooked = BZABCMCCOriginalCurrentShowAD != NULL;
+                installedAnyHook = installedAnyHook || BZABCMCCCurrentShowADHooked;
+            }
+        }
+
+        if (!BZABCMCCShowADContentHooked) {
+            SEL selector = NSSelectorFromString(@"showADWithContentView:time:");
+            Method method = class_getInstanceMethod(startViewController, selector);
+            if (BZABCMCCMethodMatches(method, 4, "v")) {
+                BZABCMCCOriginalShowADContent = BZABCMCCReplaceInstanceMethod(
+                    startViewController,
+                    selector,
+                    (IMP)BZABCMCCShowADContent);
+                BZABCMCCShowADContentHooked = BZABCMCCOriginalShowADContent != NULL;
+                installedAnyHook = installedAnyHook || BZABCMCCShowADContentHooked;
             }
         }
 
@@ -173,11 +304,34 @@ static BOOL BZABCMCCIsNeedSkipStartAd(id object, SEL selector) {
             }
         }
 
+        if (!BZABCMCCDirectEntryTimerHooked) {
+            SEL selector = NSSelectorFromString(@"addStartInitTimer");
+            Method method = class_getInstanceMethod(startViewController, selector);
+            BOOL hasNativeCompletion =
+                class_getInstanceMethod(startViewController,
+                                        NSSelectorFromString(@"skipStartViewAndEnterMainPage")) ||
+                class_getInstanceMethod(startViewController,
+                                        NSSelectorFromString(@"startViewFinished"));
+            if (hasNativeCompletion && BZABCMCCMethodMatches(method, 2, "v")) {
+                BZABCMCCOriginalAddStartInitTimer = BZABCMCCReplaceInstanceMethod(
+                    startViewController,
+                    selector,
+                    (IMP)BZABCMCCAddStartInitTimer);
+                BZABCMCCDirectEntryTimerHooked =
+                    BZABCMCCOriginalAddStartInitTimer != NULL;
+                installedAnyHook = installedAnyHook || BZABCMCCDirectEntryTimerHooked;
+            }
+        }
+
         if (installedAnyHook) {
-            [BZABStats.sharedStats recordDetectedSDKClass:@"CMStartViewController.native-skip"];
-            BZABLog(@"installed China Mobile native startup-ad hooks show=%d skip=%d",
-                    BZABCMCCShowADHooked,
-                    BZABCMCCNeedSkipHooked);
+            [BZABStats.sharedStats recordDetectedSDKClass:@"CMStartViewController.direct-entry"];
+            BZABLog(@"installed China Mobile hooks legacy=%d current=%d content=%d "
+                    "skip=%d direct=%d",
+                    BZABCMCCLegacyShowADHooked,
+                    BZABCMCCCurrentShowADHooked,
+                    BZABCMCCShowADContentHooked,
+                    BZABCMCCNeedSkipHooked,
+                    BZABCMCCDirectEntryTimerHooked);
         }
     }
 }

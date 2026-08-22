@@ -22,6 +22,6 @@ jobs:
       - name: Upload test dylib
         uses: actions/upload-artifact@v4
         with:
-          name: BZAdBlocker-test5
+          name: BZAdBlocker-test6
           path: build/BZAdBlocker.dylib
           if-no-files-found: error

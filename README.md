@@ -1,11 +1,11 @@
-# BZAdBlocker test5
+# BZAdBlocker test6
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This fifth test build combines a conservative
+advertisements in iOS apps. This sixth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
-- 中国移动 12.x (`cn.10086.app`)
+- 中国移动 12.5.2 (`cn.10086.app`)
 
 The target test environment is iOS 17.0 with TrollStore or self-signed IPA
 injection. The dylib itself supports iOS 13.0 and later.
@@ -24,12 +24,15 @@ injection. The dylib itself supports iOS 13.0 and later.
   background, covering resume ads without continuously scanning normal pages.
 - Allows reused skip controls and SDK objects to be handled once per suppression
   cycle instead of only once for the entire process lifetime.
-- Uses China Mobile's own `CMStartViewController` skip decision and presentation
-  entry points so the app advances immediately instead of leaving a five-second
-  blank startup controller after the ad view is removed.
-- Enables a China Mobile native fast path when both exact hooks are available.
-  This path skips the generic network protocol, runtime class enumeration, and
-  repeated view-tree scans; other apps retain the full generic engine.
+- Uses China Mobile 12.5.2's current `showADWithData:videoPath:`,
+  `isNeedSkipStartAd`, `addStartInitTimer`, and
+  `skipStartViewAndEnterMainPage` flow. The normal home initialization starts
+  first; on the next main-queue turn the app's own startup-completion method is
+  invoked instead of waiting for the advertisement timeout.
+- Never installs the generic network protocol, runtime SDK enumeration, or
+  repeated view-tree scans inside China Mobile. Blocking its advertisement
+  request was the cause of the visible blank timeout in test5. Other apps retain
+  the full generic engine.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the
@@ -60,9 +63,11 @@ Start with the default **平衡** mode. If login, mail, billing, recharge, or ot
 core functions fail, switch to **安全** and restart the app. Follow
 `TEST-CHECKLIST.md` for the two initial apps.
 
-For China Mobile, the native fast path is intentionally limited to startup-ad
-suppression. Its generic network and UI scanners are not installed, reducing
-launch overhead and avoiding advertisement-response timing delays.
+For China Mobile, the version-specific direct-entry path is intentionally
+limited to startup-ad suppression. Its generic network and UI scanners are not
+installed, reducing launch overhead and avoiding advertisement-response timing
+delays. The legacy `showADWithDataDict:videoUrlStr:` selector remains supported
+for older China Mobile builds.
 
 ## Custom domains
 

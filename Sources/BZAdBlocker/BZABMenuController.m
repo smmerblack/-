@@ -96,6 +96,7 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
     BZABSettings *settings = BZABSettings.sharedSettings;
     BZABProfile *profile = BZABProfile.currentProfile;
     BZABStats *stats = BZABStats.sharedStats;
+    BOOL chinaMobileTarget = BZABCMCCBlocker.isTargetApplication;
     BOOL nativeFastPath = BZABCMCCBlocker.nativeFastPathReady;
 
     BZMenuItem *version = [BZMenuItem valueItem:@"plugin.version" title:@"插件版本" value:BZABVersion];
@@ -132,7 +133,11 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
             [BZMenuItem valueItem:@"app" title:appName value:appVersion],
             [BZMenuItem valueItem:@"profile"
                             title:@"当前规则"
-                            value:nativeFastPath ? @"中国移动原生快速通道" : profile.name],
+                            value:chinaMobileTarget
+                                ? (nativeFastPath
+                                    ? @"中国移动 12.5.2 直接进入"
+                                    : @"中国移动专用规则加载中")
+                                : profile.name],
             [BZMenuItem valueItem:@"requests" title:@"已拦截请求" value:[NSString stringWithFormat:@"%lu", (unsigned long)stats.blockedRequests]],
             [BZMenuItem valueItem:@"views.count" title:@"已清理界面" value:[NSString stringWithFormat:@"%lu", (unsigned long)stats.blockedViews]],
             [BZMenuItem valueItem:@"skips.count" title:@"已触发跳过" value:[NSString stringWithFormat:@"%lu", (unsigned long)stats.triggeredSkips]],
@@ -140,8 +145,8 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
             [BZMenuItem valueItem:@"sdk.last" title:@"最后发现 SDK" value:stats.lastDetectedSDKClass ?: @"暂无"],
             [BZMenuItem valueItem:@"last.action" title:@"最后处理" value:stats.lastBlockedClass ?: @"暂无"],
             version,
-            [BZMenuItem noteItem:@"hint" text:nativeFastPath
-                ? @"三指双击打开本菜单。中国移动已启用原生快速通道：只调用 App 自身的跳过流程，不启动通用网络、SDK 和界面扫描，以缩短进入主页的时间。"
+            [BZMenuItem noteItem:@"hint" text:chinaMobileTarget
+                ? @"三指双击打开本菜单。中国移动使用版本专用直接进入流程：保留首页初始化，在下一次主线程循环调用 App 自身的启动完成方法，并禁止通用网络和界面扫描制造超时等待。"
                 : @"三指双击打开本菜单。通用模式会在冷启动及从后台返回后的保护窗口内拦截开屏 SDK，并自动触发“跳过”。若页面异常，请切换到“安全”强度并重启 App。"]
         ]]
     ];
@@ -199,9 +204,11 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
 
 - (void)menuPanel:(BZMenuPanel *)panel didTapItem:(BZMenuItem *)item {
     if ([item.identifier isEqualToString:@"rescan"]) {
-        if (BZABCMCCBlocker.nativeFastPathReady) {
+        if (BZABCMCCBlocker.isTargetApplication) {
             [BZABCMCCBlocker refreshHooks];
-            [BZMenuToast show:@"中国移动原生快速通道已启用"];
+            [BZMenuToast show:BZABCMCCBlocker.nativeFastPathReady
+                ? @"中国移动直接进入规则已启用"
+                : @"正在重新加载中国移动专用规则"];
         } else {
             [BZABViewBlocker.sharedBlocker rescanForDuration:BZABSettings.sharedSettings.suppressionDuration];
             [BZMenuToast show:@"已重新扫描广告界面"];

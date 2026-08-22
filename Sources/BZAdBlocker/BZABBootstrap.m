@@ -9,27 +9,31 @@ __attribute__((constructor))
 static void BZABBootstrap(void) {
     @autoreleasepool {
         (void)BZABSettings.sharedSettings;
+        BOOL chinaMobileTarget = [BZABCMCCBlocker isTargetApplication];
         BOOL nativeFastPath = [BZABCMCCBlocker install];
-        if (!nativeFastPath) {
+        BOOL useGenericEngine = !chinaMobileTarget;
+        if (useGenericEngine) {
             [BZABSDKBlocker install];
             [BZABNetworkBlocker install];
             [BZABViewBlocker install];
         }
 
-        NSTimeInterval setupDelay = nativeFastPath ? 1.0 : 0.0;
+        NSTimeInterval setupDelay = chinaMobileTarget ? 1.0 : 0.0;
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW,
                                      (int64_t)(setupDelay * NSEC_PER_SEC)),
                        dispatch_get_main_queue(), ^{
             [BZABMenuController.sharedController installGestureEntry];
-            if (!nativeFastPath) {
+            if (useGenericEngine) {
                 [BZABViewBlocker.sharedBlocker startSuppressionScan];
             }
             BZABProfile *profile = BZABProfile.currentProfile;
-            BZABLog(@"loaded version=%@ bundle=%@ profile=%@ nativeFastPath=%d",
+            BZABLog(@"loaded version=%@ bundle=%@ profile=%@ nativeFastPath=%d "
+                    "genericEngine=%d",
                     BZABVersion,
                     NSBundle.mainBundle.bundleIdentifier ?: @"unknown",
                     profile.name,
-                    nativeFastPath);
+                    nativeFastPath,
+                    useGenericEngine);
         });
     }
 }

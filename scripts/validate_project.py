@@ -55,7 +55,7 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.5.0-test5"',
+        'NSString * const BZABVersion = @"0.6.0-test6"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"pangolin-sdk-toutiao.com"',
@@ -66,7 +66,12 @@ def main() -> None:
         'BZABCurrentSuppressionGeneration',
         'CMStartViewController',
         'showADWithDataDict:videoUrlStr:',
+        'showADWithData:videoPath:',
+        'showADWithContentView:time:',
         'isNeedSkipStartAd',
+        'addStartInitTimer',
+        'skipStartViewAndEnterMainPage',
+        'CMStartViewController.direct-entry',
         'nativeFastPathReady',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
@@ -99,7 +104,7 @@ def main() -> None:
 
     print(
         f"validated {len(objc_files)} Objective-C files; "
-        "profiles=com.sina,cn.10086.app; version=0.5.0-test5"
+        "profiles=com.sina,cn.10086.app; version=0.6.0-test6"
     )
 
 
