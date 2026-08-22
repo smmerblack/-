@@ -21,6 +21,7 @@ def main() -> None:
         ROOT / "Makefile",
         ROOT / "Sources/BZAdBlocker/BZABBootstrap.m",
         ROOT / "Sources/BZAdBlocker/BZABCMCCBlocker.m",
+        ROOT / "Sources/BZAdBlocker/BZABTaobaoBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABCore.m",
         ROOT / "Sources/BZAdBlocker/BZABNetworkBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABSDKBlocker.m",
@@ -55,9 +56,10 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.6.0-test6"',
+        'NSString * const BZABVersion = @"0.7.0-test7"',
         '@"com.sina"',
         '@"cn.10086.app"',
+        '@"com.taobao.taobao4iphone"',
         '@"pangolin-sdk-toutiao.com"',
         '@"1rtb.com"',
         'recordTriggeredSkipWithClass',
@@ -72,6 +74,14 @@ def main() -> None:
         'addStartInitTimer',
         'skipStartViewAndEnterMainPage',
         'CMStartViewController.direct-entry',
+        'TBBootImageManager',
+        'showBootImageViewAtColdStart:',
+        'skipBootImageViewAtColdStart:',
+        'showBootImageViewAtHotStart',
+        'isColdTaobaoSplashAdvWillShow',
+        'isColdStartBootImageWillShow',
+        'isHotStartTaobaoSplashAdvWillShow',
+        'TBBootImageManager.cold-hot-native-skip',
         'nativeFastPathReady',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
@@ -104,7 +114,8 @@ def main() -> None:
 
     print(
         f"validated {len(objc_files)} Objective-C files; "
-        "profiles=com.sina,cn.10086.app; version=0.6.0-test6"
+        "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone; "
+        "version=0.7.0-test7"
     )
 
 

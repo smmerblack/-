@@ -1,7 +1,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 
-NSString * const BZABVersion = @"0.6.0-test6";
+NSString * const BZABVersion = @"0.7.0-test7";
 
 static NSString * const BZABEnabledKey = @"BZAdBlocker.Enabled";
 static NSString * const BZABNetworkKey = @"BZAdBlocker.Network";
@@ -62,7 +62,26 @@ static NSUInteger BZABSuppressionGeneration = 0;
         ];
         cmcc.defaultSuppressionDuration = 20.0;
         cmcc.resumeSuppressionDuration = 8.0;
-        profiles = @[sina, cmcc];
+
+        BZABProfile *taobao = [[BZABProfile alloc] init];
+        taobao.name = @"淘宝 10.59.20";
+        taobao.bundleIdentifiers = [NSSet setWithArray:@[
+            @"com.taobao.taobao4iphone"
+        ]];
+        taobao.classNameNeedles = @[
+            @"tbbootimage", @"spsplash", @"taobaosplash",
+            @"mmadbootimage", @"splashinteract"
+        ];
+        taobao.firstPartyDomains = @[
+            @"taobao.com", @"tmall.com", @"alicdn.com",
+            @"alibaba.com", @"alipay.com"
+        ];
+        taobao.firstPartyAdPathNeedles = @[
+            @"/splash", @"/startup-ad", @"/launch-ad", @"/boot-ad"
+        ];
+        taobao.defaultSuppressionDuration = 12.0;
+        taobao.resumeSuppressionDuration = 8.0;
+        profiles = @[sina, cmcc, taobao];
     });
     return profiles;
 }
