@@ -4,6 +4,7 @@
 #import "BZABNetworkBlocker.h"
 #import "BZABSDKBlocker.h"
 #import "BZABTaobaoBlocker.h"
+#import "BZABTencentVideoBlocker.h"
 #import "BZABViewBlocker.h"
 
 __attribute__((constructor))
@@ -12,10 +13,19 @@ static void BZABBootstrap(void) {
         (void)BZABSettings.sharedSettings;
         BOOL chinaMobileTarget = [BZABCMCCBlocker isTargetApplication];
         BOOL taobaoTarget = [BZABTaobaoBlocker isTargetApplication];
-        BOOL nativeFastPath = chinaMobileTarget
-            ? [BZABCMCCBlocker install]
-            : (taobaoTarget ? [BZABTaobaoBlocker install] : NO);
-        BOOL dedicatedTarget = chinaMobileTarget || taobaoTarget;
+        BOOL tencentVideoTarget =
+            [BZABTencentVideoBlocker isTargetApplication];
+        BOOL nativeFastPath = NO;
+        if (chinaMobileTarget) {
+            nativeFastPath = [BZABCMCCBlocker install];
+        } else if (taobaoTarget) {
+            nativeFastPath = [BZABTaobaoBlocker install];
+        } else if (tencentVideoTarget) {
+            nativeFastPath = [BZABTencentVideoBlocker install];
+        }
+        BOOL dedicatedTarget = chinaMobileTarget ||
+                               taobaoTarget ||
+                               tencentVideoTarget;
         BOOL useGenericEngine = !dedicatedTarget;
         if (useGenericEngine) {
             [BZABSDKBlocker install];

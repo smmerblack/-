@@ -1,12 +1,13 @@
-# BZAdBlocker test7
+# BZAdBlocker test8
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This seventh test build combines a conservative
+advertisements in iOS apps. This eighth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
 - 中国移动 12.5.2 (`cn.10086.app`)
 - 淘宝 10.59.20 (`com.taobao.taobao4iphone`)
+- 腾讯视频 9.04.31 (`com.tencent.live4iphone`)
 
 The target test environment is iOS 17.0 with TrollStore or self-signed IPA
 injection. The dylib itself supports iOS 13.0 and later.
@@ -31,9 +32,9 @@ injection. The dylib itself supports iOS 13.0 and later.
   first; on the next main-queue turn the app's own startup-completion method is
   invoked instead of waiting for the advertisement timeout.
 - Never installs the generic network protocol, runtime SDK enumeration, or
-  repeated view-tree scans inside China Mobile. Blocking its advertisement
-  request was the cause of the visible blank timeout in test5. Other apps retain
-  the full generic engine.
+  repeated view-tree scans inside version-specific dedicated targets. Blocking
+  China Mobile's advertisement request was the cause of the visible blank
+  timeout in test5. Unprofiled apps retain the full generic engine.
 - Uses Taobao 10.59.20's own `TBBootImageManager` flow for both launch modes.
   Cold start is redirected from `showBootImageViewAtColdStart:` to
   `skipBootImageViewAtColdStart:`; a return from the background makes
@@ -42,6 +43,17 @@ injection. The dylib itself supports iOS 13.0 and later.
 - Keeps Taobao's `readyBootImageView` initialization intact and disables the
   generic request/UI engine only inside Taobao, avoiding both homepage breakage
   and a hidden-ad timeout.
+- Uses Tencent Video 9.04.31's `QADSplashSDK` native decisions. Returning `NO`
+  from `shouldDisplaySplash` makes the original cold-start flow execute its own
+  no-ad completion immediately. Hot-start eligibility is declined through
+  `enableHotLaunchSplashWithPIPState` and
+  `enableHotLaunchSplashWithBackgroundStayTime`, so the original foreground
+  flow exits without constructing a five-second splash or timeout.
+- Blocks Tencent Video pause ads at
+  `QADPauseViewController.needBlockPauseRequest`, before the pause-ad request or
+  view is created. `QADPauseViewController.showView` and
+  `QADPauseContainView.showPauseItem:reportHandler:` provide presentation-layer
+  fallbacks without changing the normal video player's pause controls.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the
@@ -70,7 +82,7 @@ standalone.
 
 Start with the default **平衡** mode. If login, mail, billing, recharge, or other
 core functions fail, switch to **安全** and restart the app. Follow
-`TEST-CHECKLIST.md` for the three initial apps.
+`TEST-CHECKLIST.md` for the four profiled apps.
 
 For China Mobile, the version-specific direct-entry path is intentionally
 limited to startup-ad suppression. Its generic network and UI scanners are not
@@ -81,6 +93,11 @@ for older China Mobile builds.
 For Taobao, the dedicated path only changes the app's native splash display
 decision. Account, shopping, payment, deep-link, privacy, update, and normal
 homepage initialization paths are not bypassed.
+
+For Tencent Video, the dedicated path changes only QAD splash eligibility and
+pause-ad loading/presentation. Normal playback, manual pause/resume, player
+controls, login, VIP, casting, download, PiP, and homepage initialization are
+left on the app's original paths.
 
 ## Custom domains
 

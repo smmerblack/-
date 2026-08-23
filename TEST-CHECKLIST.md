@@ -10,8 +10,10 @@ Use a clean copy of each app and keep the original IPA available for rollback.
   `cn.10086.app`
 - Taobao: version 10.59.20 (build `53695709`), expected bundle ID
   `com.taobao.taobao4iphone`
+- Tencent Video: version 9.04.31 (build `25924`), expected bundle ID
+  `com.tencent.live4iphone`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.7.0-test7`
+- Expected menu version: `0.8.0-test8`
 
 ## Test each app
 
@@ -24,20 +26,28 @@ Use a clean copy of each app and keep the original IPA available for rollback.
    interactive against both test5 and the reference dylib.
 6. For Taobao, confirm the homepage becomes interactive without displaying an
    ad or leaving a five-second launch placeholder.
-7. Leave the app open for at least 30 seconds, switch to another app, wait five
+7. For Tencent Video, confirm the homepage becomes interactive without a
+   startup ad or five-second blank/placeholder screen.
+8. Leave the app open for at least 30 seconds, switch to another app, wait five
    seconds, and return. Repeat three times and confirm the resume ad is skipped.
-8. Confirm account login still works.
-9. For Sina Mail, send and receive a test email and open an attachment.
-10. For China Mobile, open balance, bill, recharge, order, and customer-service pages.
-11. For Taobao, open search, product detail, cart, order, login, and payment
+9. Confirm account login still works.
+10. For Sina Mail, send and receive a test email and open an attachment.
+11. For China Mobile, open balance, bill, recharge, order, and customer-service pages.
+12. For Taobao, open search, product detail, cart, order, login, and payment
     handoff pages; also test one notification or product deep link.
-12. Three-finger double-tap anywhere to open the settings panel.
-13. Confirm **已触发跳过** or **已清理界面** increases when an ad is suppressed.
-14. In China Mobile, confirm **当前规则** reads
+13. For Tencent Video, play a normal video, pause it at least three times in
+    portrait and full screen, and confirm no poster/video pause ad appears while
+    the normal pause controls remain usable. Resume playback, seek, change
+    clarity, test PiP/casting if available, and confirm playback remains normal.
+14. Three-finger double-tap anywhere to open the settings panel.
+15. Confirm **已触发跳过** or **已清理界面** increases when an ad is suppressed.
+16. In China Mobile, confirm **当前规则** reads
     **中国移动 12.5.2 直接进入**.
-15. In Taobao, confirm **当前规则** reads
+17. In Taobao, confirm **当前规则** reads
     **淘宝 10.59.20 冷/热启动直跳**.
-16. In China Mobile, confirm login state, privacy agreement on a clean install,
+18. In Tencent Video, confirm **当前规则** reads
+    **腾讯视频 9.04.31 开屏/返回/暂停广告直跳**.
+19. In China Mobile, confirm login state, privacy agreement on a clean install,
     app-update prompts, and push/deep-link launches still work; these flows must
     not be bypassed by the direct-entry hook.
 

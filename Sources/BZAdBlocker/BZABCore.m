@@ -1,7 +1,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 
-NSString * const BZABVersion = @"0.7.0-test7";
+NSString * const BZABVersion = @"0.8.0-test8";
 
 static NSString * const BZABEnabledKey = @"BZAdBlocker.Enabled";
 static NSString * const BZABNetworkKey = @"BZAdBlocker.Network";
@@ -81,7 +81,25 @@ static NSUInteger BZABSuppressionGeneration = 0;
         ];
         taobao.defaultSuppressionDuration = 12.0;
         taobao.resumeSuppressionDuration = 8.0;
-        profiles = @[sina, cmcc, taobao];
+
+        BZABProfile *tencentVideo = [[BZABProfile alloc] init];
+        tencentVideo.name = @"腾讯视频 9.04.31";
+        tencentVideo.bundleIdentifiers = [NSSet setWithArray:@[
+            @"com.tencent.live4iphone"
+        ]];
+        tencentVideo.classNameNeedles = @[
+            @"qadsplash", @"qlsplash", @"qadpause",
+            @"adpause", @"splashad"
+        ];
+        tencentVideo.firstPartyDomains = @[
+            @"v.qq.com", @"video.qq.com", @"qq.com", @"gtimg.com"
+        ];
+        tencentVideo.firstPartyAdPathNeedles = @[
+            @"/splash", @"/launch-ad", @"/pause-ad", @"/adpause"
+        ];
+        tencentVideo.defaultSuppressionDuration = 12.0;
+        tencentVideo.resumeSuppressionDuration = 8.0;
+        profiles = @[sina, cmcc, taobao, tencentVideo];
     });
     return profiles;
 }

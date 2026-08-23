@@ -22,6 +22,8 @@ def main() -> None:
         ROOT / "Sources/BZAdBlocker/BZABBootstrap.m",
         ROOT / "Sources/BZAdBlocker/BZABCMCCBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABTaobaoBlocker.m",
+        ROOT / "Sources/BZAdBlocker/BZABTencentVideoBlocker.h",
+        ROOT / "Sources/BZAdBlocker/BZABTencentVideoBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABCore.m",
         ROOT / "Sources/BZAdBlocker/BZABNetworkBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABSDKBlocker.m",
@@ -56,10 +58,11 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.7.0-test7"',
+        'NSString * const BZABVersion = @"0.8.0-test8"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"com.taobao.taobao4iphone"',
+        '@"com.tencent.live4iphone"',
         '@"pangolin-sdk-toutiao.com"',
         '@"1rtb.com"',
         'recordTriggeredSkipWithClass',
@@ -82,12 +85,28 @@ def main() -> None:
         'isColdStartBootImageWillShow',
         'isHotStartTaobaoSplashAdvWillShow',
         'TBBootImageManager.cold-hot-native-skip',
+        'QADSplashSDK',
+        'shouldDisplaySplash',
+        'enableHotLaunchSplashWithPIPState',
+        'enableHotLaunchSplashWithBackgroundStayTime',
+        'QADPauseViewController',
+        'needBlockPauseRequest',
+        'showView',
+        'cancelPauseModel',
+        'hiddenView',
+        'QADPauseContainView',
+        'showPauseItem:reportHandler:',
+        'QADSplashSDK+QADPauseViewController.native-skip',
         'nativeFastPathReady',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
     ]:
         if marker not in blocker_text:
             fail(f"expected marker not found: {marker}")
+
+    for forbidden_marker in ['CydiaSubstrate', 'MSHookMessageEx', 'substrate.h']:
+        if forbidden_marker in blocker_text:
+            fail(f"unexpected runtime dependency: {forbidden_marker}")
 
     embedded_binaries = list(ROOT.rglob("*.dylib")) + list(ROOT.rglob("*.deb"))
     if embedded_binaries:
@@ -114,8 +133,8 @@ def main() -> None:
 
     print(
         f"validated {len(objc_files)} Objective-C files; "
-        "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone; "
-        "version=0.7.0-test7"
+        "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone,"
+        "com.tencent.live4iphone; version=0.8.0-test8"
     )
 
 

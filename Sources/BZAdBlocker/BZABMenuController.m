@@ -2,6 +2,7 @@
 #import "BZABCMCCBlocker.h"
 #import "BZABCore.h"
 #import "BZABTaobaoBlocker.h"
+#import "BZABTencentVideoBlocker.h"
 #import "BZABViewBlocker.h"
 #import "BZMenuKit.h"
 #import <objc/runtime.h>
@@ -99,9 +100,15 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
     BZABStats *stats = BZABStats.sharedStats;
     BOOL chinaMobileTarget = BZABCMCCBlocker.isTargetApplication;
     BOOL taobaoTarget = BZABTaobaoBlocker.isTargetApplication;
-    BOOL nativeFastPath = chinaMobileTarget
-        ? BZABCMCCBlocker.nativeFastPathReady
-        : (taobaoTarget ? BZABTaobaoBlocker.nativeFastPathReady : NO);
+    BOOL tencentVideoTarget = BZABTencentVideoBlocker.isTargetApplication;
+    BOOL nativeFastPath = NO;
+    if (chinaMobileTarget) {
+        nativeFastPath = BZABCMCCBlocker.nativeFastPathReady;
+    } else if (taobaoTarget) {
+        nativeFastPath = BZABTaobaoBlocker.nativeFastPathReady;
+    } else if (tencentVideoTarget) {
+        nativeFastPath = BZABTencentVideoBlocker.nativeFastPathReady;
+    }
     NSString *ruleName = profile.name;
     NSString *hint = @"三指双击打开本菜单。通用模式会在冷启动及从后台返回后的保护窗口内拦截开屏 SDK，并自动触发“跳过”。若页面异常，请切换到“安全”强度并重启 App。";
     if (chinaMobileTarget) {
@@ -114,6 +121,11 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
             ? @"淘宝 10.59.20 冷/热启动直跳"
             : @"淘宝专用规则加载中";
         hint = @"三指双击打开本菜单。淘宝使用 TBBootImage 原生路径：冷启动调用 App 自身的跳过方法，后台返回直接拒绝热启动广告展示；首页初始化保持不变，也不启用通用网络拦截。";
+    } else if (tencentVideoTarget) {
+        ruleName = nativeFastPath
+            ? @"腾讯视频 9.04.31 开屏/返回/暂停广告直跳"
+            : @"腾讯视频专用规则加载中";
+        hint = @"三指双击打开本菜单。腾讯视频使用 QAD 原生决策路径：冷启动和后台返回走 SDK 自身的无广告完成分支，不创建五秒广告计时；播放器暂停广告在请求闸门阻止，并保留播放、暂停和控制栏功能。";
     }
 
     BZMenuItem *version = [BZMenuItem valueItem:@"plugin.version" title:@"插件版本" value:BZABVersion];
@@ -225,6 +237,11 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
             [BZMenuToast show:BZABTaobaoBlocker.nativeFastPathReady
                 ? @"淘宝冷/热启动直跳规则已启用"
                 : @"正在重新加载淘宝专用规则"];
+        } else if (BZABTencentVideoBlocker.isTargetApplication) {
+            [BZABTencentVideoBlocker refreshHooks];
+            [BZMenuToast show:BZABTencentVideoBlocker.nativeFastPathReady
+                ? @"腾讯视频开屏/返回/暂停广告规则已启用"
+                : @"正在重新加载腾讯视频专用规则"];
         } else {
             [BZABViewBlocker.sharedBlocker rescanForDuration:BZABSettings.sharedSettings.suppressionDuration];
             [BZMenuToast show:@"已重新扫描广告界面"];
