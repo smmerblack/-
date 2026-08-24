@@ -60,7 +60,7 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.9.0-test9"',
+        'NSString * const BZABVersion = @"0.10.0-test10"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"com.taobao.taobao4iphone"',
@@ -103,8 +103,9 @@ def main() -> None:
         'RCTTiming',
         'createTimer:duration:jsSchedulingTime:repeats:',
         'setTextStorage:contentFrame:descendantViews:',
-        'RCTTiming.guazi-five-second-fast-forward',
-        'duration >= 4500.0 && duration <= 6500.0',
+        'RCTTiming.guazi-seven-second-fast-forward',
+        'createTimerForNextFrame:duration:jsSchedulingTime:repeats:',
+        'duration >= 4500.0 && duration <= 8500.0',
         'forwardedDuration = 50.0',
         '@"关闭广告"',
         '@"PG官方"',
@@ -114,7 +115,11 @@ def main() -> None:
         '@"Guazi.popup-ad-overlay"',
         '@"Guazi.popup-react-close"',
         '@"Guazi.home-ad-tile"',
-        'RCTTiming+Guazi.native-fast-path',
+        '@"Guazi.remote-media-direct-skip"',
+        '@"Guazi.remote-media-ad-overlay"',
+        'evaluateJavaScript:completionHandler:',
+        'BZABGuaziWebCleanupScript',
+        'RCTTiming+Guazi.dual-native-fast-path',
         'nativeFastPathReady',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
@@ -152,7 +157,7 @@ def main() -> None:
     print(
         f"validated {len(objc_files)} Objective-C files; "
         "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone,"
-        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.9.0-test9"
+        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.10.0-test10"
     )
 
 

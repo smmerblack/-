@@ -2,6 +2,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIKit.h>
+#import <math.h>
 #import <objc/runtime.h>
 #import <string.h>
 
@@ -9,10 +10,14 @@ static const void *BZABGuaziCloseAttemptGenerationKey =
     &BZABGuaziCloseAttemptGenerationKey;
 static const void *BZABGuaziTimerGenerationKey =
     &BZABGuaziTimerGenerationKey;
+static const void *BZABGuaziWebInjectionTimeKey =
+    &BZABGuaziWebInjectionTimeKey;
 
 static IMP _Nullable BZABGuaziOriginalCreateTimer;
+static IMP _Nullable BZABGuaziOriginalCreateObjectTimer;
 static IMP _Nullable BZABGuaziOriginalSetTextStorage;
 static BOOL BZABGuaziCreateTimerHooked;
+static BOOL BZABGuaziCreateObjectTimerHooked;
 static BOOL BZABGuaziSetTextStorageHooked;
 
 @interface BZABGuaziBlocker (InternalScanRequest)
@@ -63,6 +68,26 @@ static BOOL BZABGuaziTimerMethodMatches(Method method) {
            BZABGuaziArgumentMatches(method, 5, "Bc");
 }
 
+static BOOL BZABGuaziObjectTimerMethodMatches(Method method) {
+    if (!method || method_getNumberOfArguments(method) != 6) {
+        return NO;
+    }
+    char returnType[32] = {0};
+    method_getReturnType(method, returnType, sizeof(returnType));
+    return BZABGuaziUnqualifiedType(returnType) == 'v' &&
+           BZABGuaziArgumentMatches(method, 2, "@") &&
+           BZABGuaziArgumentMatches(method, 3, "d") &&
+           BZABGuaziArgumentMatches(method, 4, "@") &&
+           BZABGuaziArgumentMatches(method, 5, "Bc");
+}
+
+static BOOL BZABGuaziShouldFastForwardTimer(double duration, BOOL repeats) {
+    return BZABGuaziShouldBlockAds() &&
+           BZABIsInsideSuppressionWindow() &&
+           !repeats &&
+           duration >= 4500.0 && duration <= 8500.0;
+}
+
 static void BZABGuaziRecordTimerSkipOnce(id object) {
     NSUInteger generation = BZABCurrentSuppressionGeneration();
     NSNumber *recordedGeneration = objc_getAssociatedObject(
@@ -76,7 +101,7 @@ static void BZABGuaziRecordTimerSkipOnce(id object) {
                              @(generation),
                              OBJC_ASSOCIATION_RETAIN_NONATOMIC);
     [BZABStats.sharedStats recordTriggeredSkipWithClass:
-        @"RCTTiming.guazi-five-second-fast-forward"];
+        @"RCTTiming.guazi-seven-second-fast-forward"];
 }
 
 static void BZABGuaziCreateTimer(id object,
@@ -86,10 +111,7 @@ static void BZABGuaziCreateTimer(id object,
                                  double jsSchedulingTime,
                                  BOOL repeats) {
     double forwardedDuration = duration;
-    if (BZABGuaziShouldBlockAds() &&
-        BZABIsInsideSuppressionWindow() &&
-        !repeats &&
-        duration >= 4500.0 && duration <= 6500.0) {
+    if (BZABGuaziShouldFastForwardTimer(duration, repeats)) {
         forwardedDuration = 50.0;
         BZABGuaziRecordTimerSkipOnce(object);
         BZABLog(@"fast-forwarded Guazi one-shot timer duration=%.0fms",
@@ -104,6 +126,31 @@ static void BZABGuaziCreateTimer(id object,
                                           forwardedDuration,
                                           jsSchedulingTime,
                                           repeats);
+    }
+}
+
+static void BZABGuaziCreateObjectTimer(id object,
+                                       SEL selector,
+                                       id callbackID,
+                                       double duration,
+                                       id jsSchedulingTime,
+                                       BOOL repeats) {
+    double forwardedDuration = duration;
+    if (BZABGuaziShouldFastForwardTimer(duration, repeats)) {
+        forwardedDuration = 50.0;
+        BZABGuaziRecordTimerSkipOnce(object);
+        BZABLog(@"fast-forwarded Guazi object timer duration=%.0fms",
+                duration);
+    }
+
+    if (BZABGuaziOriginalCreateObjectTimer) {
+        ((void (*)(id, SEL, id, double, id, BOOL))
+            BZABGuaziOriginalCreateObjectTimer)(object,
+                                                selector,
+                                                callbackID,
+                                                forwardedDuration,
+                                                jsSchedulingTime,
+                                                repeats);
     }
 }
 
@@ -294,6 +341,59 @@ static NSString *BZABGuaziVisibleText(UIView *view) {
     return text ?: @"";
 }
 
+static BOOL BZABGuaziIsWebView(UIView *view) {
+    NSString *className = NSStringFromClass(view.class).lowercaseString;
+    return [className containsString:@"wkwebview"] ||
+           [className containsString:@"rncwebviewimpl"];
+}
+
+static BOOL BZABGuaziIsRemoteAdMediaView(UIView *view) {
+    if (BZABGuaziIsWebView(view)) {
+        return YES;
+    }
+    NSString *className = NSStringFromClass(view.class).lowercaseString;
+    if (![className containsString:@"rctimageview"]) {
+        return NO;
+    }
+    id sources = BZABGuaziObjectGetter(view,
+        NSSelectorFromString(@"imageSources"));
+    NSString *description = [sources description].lowercaseString;
+    return [description containsString:@"http"];
+}
+
+static NSString *BZABGuaziWebCleanupScript(void) {
+    static NSString *script;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        script =
+            @"(()=>{try{"
+             @"const n=['pg官方','开元棋牌','p直播','全国空降','新葡京',"
+             @"'同城小姐','免费约妞','更多应用','官方扶持','免费旋转',"
+             @"'直播免费看','爆大奖','莞式服务','大放水','上门服务','送1888'];"
+             @"const z=s=>(s||'').replace(/[\\s\\u00a0]+/g,'').toLowerCase();"
+             @"const a=Array.from(document.querySelectorAll('body *'));"
+             @"const q=a.find(e=>{const t=z(e.innerText||e.textContent);"
+             @"return t.length>0&&t.length<=20&&(t.includes('关闭广告')||"
+             @"t.includes('跳过广告')||t==='closead');});"
+             @"if(q){const c=q.closest('button,a,[role=button],[onclick]')||q;"
+             @"c.click();setTimeout(()=>{if(!q.isConnected)return;let b=c;"
+             @"for(let i=0;i<5&&b.parentElement&&b.parentElement!==document.body;i++){"
+             @"const p=b.parentElement,r=p.getBoundingClientRect();b=p;"
+             @"if(r.width>innerWidth*.48&&r.height>innerHeight*.36)break;}"
+             @"if(b!==document.body)b.style.setProperty('display','none','important');},80);}"
+             @"const h=[],s=new Set();for(const e of a){const t=z(e.innerText||e.textContent);"
+             @"if(!t||t.length>48)continue;for(const x of n){if(t.includes(x)){"
+             @"s.add(x);h.push(e);break;}}}if(s.size>=2){for(const e of new Set(h)){"
+             @"let c=e.closest('a,button,[role=button],li');if(!c){c=e;"
+             @"for(let i=0;i<5&&c.parentElement&&c.parentElement!==document.body;i++){"
+             @"const p=c.parentElement,r=p.getBoundingClientRect();"
+             @"if(r.width>innerWidth*.48||r.height>innerHeight*.42)break;c=p;}}"
+             @"c.style.setProperty('display','none','important');}}return true;"
+             @"}catch(e){return false;}})();";
+    });
+    return script;
+}
+
 static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
     NSMutableArray<UIWindow *> *windows = [NSMutableArray array];
     UIApplication *application = UIApplication.sharedApplication;
@@ -319,6 +419,12 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
 - (void)requestScanAfter:(NSTimeInterval)delay;
 - (void)startScanForDuration:(NSTimeInterval)duration;
 - (void)scanAllWindows;
+- (BOOL)processMediaAndWebViewsInView:(UIView *)view
+                               window:(UIWindow *)window
+                              visited:(NSUInteger *)visited;
+- (void)injectWebCleanupIfNeeded:(UIView *)view;
+- (nullable UIView *)geometricAdContainerForMediaView:(UIView *)view
+                                                window:(UIWindow *)window;
 - (void)applicationDidEnterBackground:(NSNotification *)notification;
 - (void)applicationWillEnterForeground:(NSNotification *)notification;
 - (void)applicationDidBecomeActive:(NSNotification *)notification;
@@ -416,7 +522,8 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
 
 + (BOOL)nativeFastPathReady {
     @synchronized (self) {
-        return BZABGuaziCreateTimerHooked;
+        return BZABGuaziCreateTimerHooked &&
+               BZABGuaziCreateObjectTimerHooked;
     }
 }
 
@@ -425,11 +532,13 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
         return;
     }
     @synchronized (self) {
-        if (BZABGuaziCreateTimerHooked && BZABGuaziSetTextStorageHooked) {
+        if (BZABGuaziCreateTimerHooked &&
+            BZABGuaziCreateObjectTimerHooked &&
+            BZABGuaziSetTextStorageHooked) {
             return;
         }
+        Class timingClass = NSClassFromString(@"RCTTiming");
         if (!BZABGuaziCreateTimerHooked) {
-            Class timingClass = NSClassFromString(@"RCTTiming");
             SEL selector = NSSelectorFromString(
                 @"createTimer:duration:jsSchedulingTime:repeats:");
             Method method = class_getInstanceMethod(timingClass, selector);
@@ -442,8 +551,25 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
                     BZABGuaziOriginalCreateTimer != NULL;
                 if (BZABGuaziCreateTimerHooked) {
                     [BZABStats.sharedStats recordDetectedSDKClass:
-                        @"RCTTiming+Guazi.native-fast-path"];
-                    BZABLog(@"installed Guazi RCTTiming five-second fast path");
+                        @"RCTTiming+Guazi.dual-native-fast-path"];
+                    BZABLog(@"installed Guazi RCTTiming numeric fast path");
+                }
+            }
+        }
+
+        if (!BZABGuaziCreateObjectTimerHooked) {
+            SEL selector = NSSelectorFromString(
+                @"createTimerForNextFrame:duration:jsSchedulingTime:repeats:");
+            Method method = class_getInstanceMethod(timingClass, selector);
+            if (timingClass && BZABGuaziObjectTimerMethodMatches(method)) {
+                BZABGuaziOriginalCreateObjectTimer = BZABGuaziReplaceMethod(
+                    timingClass,
+                    selector,
+                    (IMP)BZABGuaziCreateObjectTimer);
+                BZABGuaziCreateObjectTimerHooked =
+                    BZABGuaziOriginalCreateObjectTimer != NULL;
+                if (BZABGuaziCreateObjectTimerHooked) {
+                    BZABLog(@"installed Guazi RCTTiming object fast path");
                 }
             }
         }
@@ -690,6 +816,125 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
     return NO;
 }
 
+- (void)injectWebCleanupIfNeeded:(UIView *)view {
+    SEL selector = NSSelectorFromString(@"evaluateJavaScript:completionHandler:");
+    if (![view respondsToSelector:selector]) {
+        return;
+    }
+    CFTimeInterval now = CACurrentMediaTime();
+    NSNumber *lastInjection = objc_getAssociatedObject(
+        view,
+        BZABGuaziWebInjectionTimeKey);
+    if (lastInjection && now - lastInjection.doubleValue < 0.75) {
+        return;
+    }
+    objc_setAssociatedObject(view,
+                             BZABGuaziWebInjectionTimeKey,
+                             @(now),
+                             OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    IMP implementation = [view methodForSelector:selector];
+    if (implementation) {
+        ((void (*)(id, SEL, id, id))implementation)(
+            view,
+            selector,
+            BZABGuaziWebCleanupScript(),
+            nil);
+    }
+}
+
+- (nullable UIView *)geometricAdContainerForMediaView:(UIView *)view
+                                                window:(UIWindow *)window {
+    if (!BZABIsInsideSuppressionWindow()) {
+        return nil;
+    }
+    CGFloat windowWidth = CGRectGetWidth(window.bounds);
+    CGFloat windowHeight = CGRectGetHeight(window.bounds);
+    CGFloat windowArea = windowWidth * windowHeight;
+    if (windowArea <= 0.0) {
+        return nil;
+    }
+
+    CGRect mediaFrame = [view convertRect:view.bounds toView:window];
+    CGRect visibleMediaFrame = CGRectIntersection(mediaFrame, window.bounds);
+    CGFloat mediaWidth = CGRectGetWidth(visibleMediaFrame);
+    CGFloat mediaHeight = CGRectGetHeight(visibleMediaFrame);
+    CGFloat mediaArea = MAX(0.0, mediaWidth) * MAX(0.0, mediaHeight);
+    CGFloat mediaRatio = mediaArea / windowArea;
+    BOOL fullScreenMedia = mediaRatio >= 0.72;
+    BOOL centeredPopupMedia =
+        mediaRatio >= 0.18 && mediaRatio <= 0.70 &&
+        mediaWidth >= windowWidth * 0.55 &&
+        mediaHeight >= windowHeight * 0.32 &&
+        fabs(CGRectGetMidX(visibleMediaFrame) - CGRectGetMidX(window.bounds)) <=
+            windowWidth * 0.18 &&
+        fabs(CGRectGetMidY(visibleMediaFrame) - CGRectGetMidY(window.bounds)) <=
+            windowHeight * 0.25;
+    if (!fullScreenMedia && !centeredPopupMedia) {
+        return nil;
+    }
+
+    UIView *rootView = window.rootViewController.view;
+    UIView *largeCandidate = nil;
+    NSUInteger depth = 0;
+    for (UIView *candidate = view;
+         candidate && candidate != window && candidate != rootView && depth < 7;
+         candidate = candidate.superview, depth++) {
+        NSString *className = NSStringFromClass(candidate.class).lowercaseString;
+        if ([className containsString:@"modalhost"] ||
+            [className containsString:@"modalcontainer"]) {
+            return candidate;
+        }
+        if ([className containsString:@"rootcontent"] ||
+            [className containsString:@"rootview"]) {
+            break;
+        }
+        CGRect frame = [candidate convertRect:candidate.bounds toView:window];
+        CGRect visibleFrame = CGRectIntersection(frame, window.bounds);
+        CGFloat area = MAX(0.0, CGRectGetWidth(visibleFrame)) *
+                       MAX(0.0, CGRectGetHeight(visibleFrame));
+        if (area / windowArea >= 0.72 && depth <= 3) {
+            largeCandidate = candidate;
+        }
+    }
+    return largeCandidate;
+}
+
+- (BOOL)processMediaAndWebViewsInView:(UIView *)view
+                               window:(UIWindow *)window
+                              visited:(NSUInteger *)visited {
+    if (!view || view.hidden || view.alpha <= 0.01 || *visited >= 5000) {
+        return NO;
+    }
+    *visited += 1;
+
+    if (BZABGuaziIsWebView(view)) {
+        [self injectWebCleanupIfNeeded:view];
+    }
+    if (BZABGuaziIsRemoteAdMediaView(view)) {
+        UIView *container = [self geometricAdContainerForMediaView:view
+                                                            window:window];
+        if (container) {
+            BZABGuaziDismissModalIfAvailable(container);
+            container.userInteractionEnabled = NO;
+            container.hidden = YES;
+            [BZABStats.sharedStats recordTriggeredSkipWithClass:
+                @"Guazi.remote-media-direct-skip"];
+            [BZABStats.sharedStats recordBlockedClass:
+                @"Guazi.remote-media-ad-overlay"];
+            return YES;
+        }
+    }
+
+    for (UIView *subview in [view.subviews copy]) {
+        if ([self processMediaAndWebViewsInView:subview
+                                         window:window
+                                        visited:visited]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (NSSet<NSString *> *)collectHomeEvidenceInView:(UIView *)view
                                    evidenceViews:(NSMutableArray<UIView *> *)evidenceViews
                                          visited:(NSUInteger *)visited {
@@ -832,6 +1077,10 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
         if (window.hidden || window.alpha <= 0.01 || !window.rootViewController) {
             continue;
         }
+        NSUInteger mediaVisited = 0;
+        (void)[self processMediaAndWebViewsInView:window
+                                           window:window
+                                          visited:&mediaVisited];
         NSUInteger visited = 0;
         (void)[self findAndClosePopupInView:window visited:&visited];
         [self hideHomeAdsInWindow:window];
