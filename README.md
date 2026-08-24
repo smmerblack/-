@@ -1,7 +1,7 @@
-# BZAdBlocker test12
+# BZAdBlocker test13
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This twelfth test build combines a conservative
+advertisements in iOS apps. This thirteenth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
@@ -58,15 +58,16 @@ injection. The dylib itself supports iOS 13.0 and later.
 - Uses the Guazi Video 1.1 capture to block only `/App/Ad/*` and
   `/App/IndexList/homeFloatAd`, regardless of the rotating API hostname. Each
   match receives an immediate HTTP 200 business response with a non-success ad
-  code and no ad data. Other API paths, media cards, login, and homepage
-  initialization remain untouched.
+  code, empty message, and no ad data. Keeping the message empty prevents the
+  App from rendering the blocker response as a `no ad` toast. Other API paths,
+  media cards, login, and homepage initialization remain untouched.
 - The capture tied `/App/Ad/splashInfo` to the supplied 920×1994 full-screen
   splash and `/App/Ad/activityInfo` to the 1000×1380 popup. It also identified
   the app's ad config, banner, notice, vajra, skit, bars-index, and floating-home
   endpoints under the two exact path families above.
 - Reverts test11's broad acceleration of 4.5–8.5 second new-architecture React
   Native timers, which could also match a normal homepage initialization timer
-  and produce a black screen. test12 leaves object timers unchanged and keeps
+  and produce a black screen. test13 leaves object timers unchanged and keeps
   only the already-safe legacy millisecond fallback from test10.
 - Restores test10's conservative React Native image geometry. Web and text
   cleanup remain narrow fallbacks for the supplied close text and homepage

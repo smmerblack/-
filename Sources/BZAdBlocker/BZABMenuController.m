@@ -134,7 +134,7 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
         ruleName = nativeFastPath
             ? @"瓜子影视 1.1 精确接口去广告"
             : @"瓜子影视专用规则加载中";
-        hint = @"三指双击打开本菜单。瓜子影视仅拦截抓包确认的 /App/Ad/* 与 /App/IndexList/homeFloatAd，并立即返回无广告结果；API 域名可变，因此按路径匹配。test12 不再加速新架构秒计时器，也不扩大图片视图隐藏范围，首页初始化和其他网络请求保持原样。";
+        hint = @"三指双击打开本菜单。瓜子影视仅拦截抓包确认的 /App/Ad/* 与 /App/IndexList/homeFloatAd，并立即返回无广告结果；API 域名可变，因此按路径匹配。test13 的无广告响应不包含提示文字，同时不加速新架构秒计时器，也不扩大图片视图隐藏范围，首页初始化和其他网络请求保持原样。";
     }
 
     BZMenuItem *version = [BZMenuItem valueItem:@"plugin.version" title:@"插件版本" value:BZABVersion];

@@ -109,7 +109,7 @@ static BOOL BZABHostLooksLikeDedicatedAdHost(NSString *host) {
     BZABLog(@"blocked request host=%@", host);
 
     if ([BZABNetworkBlocker isGuaziCapturedAdAPIURL:URL]) {
-        NSData *body = [@"{\"code\":404,\"msg\":\"no ad\",\"data\":null}"
+        NSData *body = [@"{\"code\":404,\"msg\":\"\",\"data\":null}"
             dataUsingEncoding:NSUTF8StringEncoding];
         NSDictionary<NSString *, NSString *> *headers = @{
             @"Cache-Control": @"no-store",

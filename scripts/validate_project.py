@@ -60,7 +60,7 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.12.0-test12"',
+        'NSString * const BZABVersion = @"0.13.0-test13"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"com.taobao.taobao4iphone"',
@@ -110,6 +110,7 @@ def main() -> None:
         '@"/app/ad/"',
         '@"/app/indexlist/homefloatad"',
         '@"Guazi.captured-ad-api-no-content"',
+        '@"{\\"code\\":404,\\"msg\\":\\"\\",\\"data\\":null}"',
         'statusCode:200',
         'didLoadData:body',
         '@"关闭广告"',
@@ -170,7 +171,7 @@ def main() -> None:
     print(
         f"validated {len(objc_files)} Objective-C files; "
         "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone,"
-        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.12.0-test12"
+        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.13.0-test13"
     )
 
 

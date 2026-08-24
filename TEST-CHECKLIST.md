@@ -15,7 +15,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 - Guazi Video: version 1.1 (build `1`), expected bundle ID
   `com.Tajjwab.numberPulse`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.12.0-test12`
+- Expected menu version: `0.13.0-test13`
 
 ## Test each app
 
@@ -36,7 +36,8 @@ Use a clean copy of each app and keep the original IPA available for rollback.
    does not appear and the homepage promotion content supplied by
    `homeFloatAd` is absent. Normal film cards, categories, search, playback,
    tabs, and account pages must remain usable. Open the menu and confirm
-   **已拦截请求** and **已触发跳过** are greater than zero.
+   **已拦截请求** and **已触发跳过** are greater than zero. Confirm no
+   `no ad` text or empty error toast appears on the homepage.
 9. Leave the app open for at least 30 seconds, switch to another app, wait five
    seconds, and return. Repeat three times and confirm the resume ad is skipped.
 10. Confirm account login still works.
