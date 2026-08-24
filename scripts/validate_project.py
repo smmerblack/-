@@ -24,6 +24,8 @@ def main() -> None:
         ROOT / "Sources/BZAdBlocker/BZABTaobaoBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABTencentVideoBlocker.h",
         ROOT / "Sources/BZAdBlocker/BZABTencentVideoBlocker.m",
+        ROOT / "Sources/BZAdBlocker/BZABGuaziBlocker.h",
+        ROOT / "Sources/BZAdBlocker/BZABGuaziBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABCore.m",
         ROOT / "Sources/BZAdBlocker/BZABNetworkBlocker.m",
         ROOT / "Sources/BZAdBlocker/BZABSDKBlocker.m",
@@ -58,11 +60,12 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.8.0-test8"',
+        'NSString * const BZABVersion = @"0.9.0-test9"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"com.taobao.taobao4iphone"',
         '@"com.tencent.live4iphone"',
+        '@"com.Tajjwab.numberPulse"',
         '@"pangolin-sdk-toutiao.com"',
         '@"1rtb.com"',
         'recordTriggeredSkipWithClass',
@@ -97,6 +100,21 @@ def main() -> None:
         'QADPauseContainView',
         'showPauseItem:reportHandler:',
         'QADSplashSDK+QADPauseViewController.native-skip',
+        'RCTTiming',
+        'createTimer:duration:jsSchedulingTime:repeats:',
+        'setTextStorage:contentFrame:descendantViews:',
+        'RCTTiming.guazi-five-second-fast-forward',
+        'duration >= 4500.0 && duration <= 6500.0',
+        'forwardedDuration = 50.0',
+        '@"关闭广告"',
+        '@"PG官方"',
+        '@"开元棋牌"',
+        '@"全国空降"',
+        '@"同城小姐"',
+        '@"Guazi.popup-ad-overlay"',
+        '@"Guazi.popup-react-close"',
+        '@"Guazi.home-ad-tile"',
+        'RCTTiming+Guazi.native-fast-path',
         'nativeFastPathReady',
         'numberOfTouchesRequired = 3',
         '__attribute__((constructor))',
@@ -134,7 +152,7 @@ def main() -> None:
     print(
         f"validated {len(objc_files)} Objective-C files; "
         "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone,"
-        "com.tencent.live4iphone; version=0.8.0-test8"
+        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.9.0-test9"
     )
 
 

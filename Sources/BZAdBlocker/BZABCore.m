@@ -1,7 +1,7 @@
 #import "BZABCore.h"
 #import <QuartzCore/QuartzCore.h>
 
-NSString * const BZABVersion = @"0.8.0-test8";
+NSString * const BZABVersion = @"0.9.0-test9";
 
 static NSString * const BZABEnabledKey = @"BZAdBlocker.Enabled";
 static NSString * const BZABNetworkKey = @"BZAdBlocker.Network";
@@ -99,7 +99,20 @@ static NSUInteger BZABSuppressionGeneration = 0;
         ];
         tencentVideo.defaultSuppressionDuration = 12.0;
         tencentVideo.resumeSuppressionDuration = 8.0;
-        profiles = @[sina, cmcc, taobao, tencentVideo];
+
+        BZABProfile *guazi = [[BZABProfile alloc] init];
+        guazi.name = @"瓜子影视 1.1";
+        guazi.bundleIdentifiers = [NSSet setWithArray:@[
+            @"com.Tajjwab.numberPulse"
+        ]];
+        guazi.classNameNeedles = @[
+            @"rctmodalhostview", @"guazisplash", @"numberpulseadvert"
+        ];
+        guazi.firstPartyDomains = @[];
+        guazi.firstPartyAdPathNeedles = @[];
+        guazi.defaultSuppressionDuration = 12.0;
+        guazi.resumeSuppressionDuration = 10.0;
+        profiles = @[sina, cmcc, taobao, tencentVideo, guazi];
     });
     return profiles;
 }

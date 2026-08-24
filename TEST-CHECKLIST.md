@@ -12,8 +12,10 @@ Use a clean copy of each app and keep the original IPA available for rollback.
   `com.taobao.taobao4iphone`
 - Tencent Video: version 9.04.31 (build `25924`), expected bundle ID
   `com.tencent.live4iphone`
+- Guazi Video: version 1.1 (build `1`), expected bundle ID
+  `com.Tajjwab.numberPulse`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.8.0-test8`
+- Expected menu version: `0.9.0-test9`
 
 ## Test each app
 
@@ -28,26 +30,34 @@ Use a clean copy of each app and keep the original IPA available for rollback.
    ad or leaving a five-second launch placeholder.
 7. For Tencent Video, confirm the homepage becomes interactive without a
    startup ad or five-second blank/placeholder screen.
-8. Leave the app open for at least 30 seconds, switch to another app, wait five
+8. For Guazi Video, confirm the homepage becomes interactive in roughly one
+   second without displaying an ad or retaining the former five-second wait.
+   Confirm the “GUAZi × 1P游戏” popup is closed and the homepage promotion tiles
+   labelled PG官方/开元棋牌/P直播/全国空降/新葡京/同城小姐/免费约妞 are no longer
+   visible. Normal film cards, categories, search, playback, tabs, and account
+   pages must remain usable.
+9. Leave the app open for at least 30 seconds, switch to another app, wait five
    seconds, and return. Repeat three times and confirm the resume ad is skipped.
-9. Confirm account login still works.
-10. For Sina Mail, send and receive a test email and open an attachment.
-11. For China Mobile, open balance, bill, recharge, order, and customer-service pages.
-12. For Taobao, open search, product detail, cart, order, login, and payment
+10. Confirm account login still works.
+11. For Sina Mail, send and receive a test email and open an attachment.
+12. For China Mobile, open balance, bill, recharge, order, and customer-service pages.
+13. For Taobao, open search, product detail, cart, order, login, and payment
     handoff pages; also test one notification or product deep link.
-13. For Tencent Video, play a normal video, pause it at least three times in
+14. For Tencent Video, play a normal video, pause it at least three times in
     portrait and full screen, and confirm no poster/video pause ad appears while
     the normal pause controls remain usable. Resume playback, seek, change
     clarity, test PiP/casting if available, and confirm playback remains normal.
-14. Three-finger double-tap anywhere to open the settings panel.
-15. Confirm **已触发跳过** or **已清理界面** increases when an ad is suppressed.
-16. In China Mobile, confirm **当前规则** reads
+15. Three-finger double-tap anywhere to open the settings panel.
+16. Confirm **已触发跳过** or **已清理界面** increases when an ad is suppressed.
+17. In China Mobile, confirm **当前规则** reads
     **中国移动 12.5.2 直接进入**.
-17. In Taobao, confirm **当前规则** reads
+18. In Taobao, confirm **当前规则** reads
     **淘宝 10.59.20 冷/热启动直跳**.
-18. In Tencent Video, confirm **当前规则** reads
+19. In Tencent Video, confirm **当前规则** reads
     **腾讯视频 9.04.31 开屏/返回/暂停广告直跳**.
-19. In China Mobile, confirm login state, privacy agreement on a clean install,
+20. In Guazi Video, confirm **当前规则** reads
+    **瓜子影视 1.1 开屏/返回直跳 + 弹窗/首页清理**.
+21. In China Mobile, confirm login state, privacy agreement on a clean install,
     app-update prompts, and push/deep-link launches still work; these flows must
     not be bypassed by the direct-entry hook.
 

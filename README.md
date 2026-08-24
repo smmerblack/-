@@ -1,13 +1,14 @@
-# BZAdBlocker test8
+# BZAdBlocker test9
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This eighth test build combines a conservative
+advertisements in iOS apps. This ninth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
 - 中国移动 12.5.2 (`cn.10086.app`)
 - 淘宝 10.59.20 (`com.taobao.taobao4iphone`)
 - 腾讯视频 9.04.31 (`com.tencent.live4iphone`)
+- 瓜子影视 1.1 (`com.Tajjwab.numberPulse`)
 
 The target test environment is iOS 17.0 with TrollStore or self-signed IPA
 injection. The dylib itself supports iOS 13.0 and later.
@@ -54,6 +55,16 @@ injection. The dylib itself supports iOS 13.0 and later.
   view is created. `QADPauseViewController.showView` and
   `QADPauseContainView.showPauseItem:reportHandler:` provide presentation-layer
   fallbacks without changing the normal video player's pause controls.
+- Uses Guazi Video 1.1's React Native `RCTTiming` bridge to fast-forward only
+  non-repeating 4.5–6.5 second timers during the launch/foreground protection
+  window. The original JavaScript completion callback still runs after 50 ms,
+  so navigation reaches the homepage instead of merely hiding an advertisement
+  while leaving the five-second wait in place.
+- Closes Guazi's React Native popup advertisement and hides homepage promotion
+  tiles only when at least two app-specific labels from the supplied sample are
+  present. Single generic words such as “直播” or “更多” are not sufficient.
+- Keeps Guazi on a dedicated path: the generic URL protocol, SDK enumeration,
+  and broad class-name suppression are not installed in this app.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the
@@ -82,7 +93,7 @@ standalone.
 
 Start with the default **平衡** mode. If login, mail, billing, recharge, or other
 core functions fail, switch to **安全** and restart the app. Follow
-`TEST-CHECKLIST.md` for the four profiled apps.
+`TEST-CHECKLIST.md` for the five profiled apps.
 
 For China Mobile, the version-specific direct-entry path is intentionally
 limited to startup-ad suppression. Its generic network and UI scanners are not
@@ -98,6 +109,12 @@ For Tencent Video, the dedicated path changes only QAD splash eligibility and
 pause-ad loading/presentation. Normal playback, manual pause/resume, player
 controls, login, VIP, casting, download, PiP, and homepage initialization are
 left on the app's original paths.
+
+For Guazi Video, the dedicated path keeps React Native's own timer callback and
+homepage initialization intact. Its popup/home cleanup is intentionally tied to
+the labels observed in version 1.1. If a future CodePush update changes those
+labels or moves the ad decision into a different JavaScript timer, the rule must
+be re-profiled against that current `app.jsbundle`.
 
 ## Custom domains
 
