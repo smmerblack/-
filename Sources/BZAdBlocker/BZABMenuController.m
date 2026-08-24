@@ -134,7 +134,7 @@ static const void *BZABGestureInstalledKey = &BZABGestureInstalledKey;
         ruleName = nativeFastPath
             ? @"瓜子影视 1.1 开屏/返回直跳 + 弹窗/首页清理"
             : @"瓜子影视专用规则加载中";
-        hint = @"三指双击打开本菜单。瓜子影视同时覆盖 React Native 的数值和对象计时入口，把启动及后台返回时 4.5 至 8.5 秒的一次性广告计时缩短为 0.05 秒，随后仍由 App 自己进入首页；远程全屏图片、弹窗和网页推广仅在专用保护条件下清理，不启用通用网络拦截。";
+        hint = @"三指双击打开本菜单。瓜子影视同时覆盖 React Native 的旧架构毫秒计时与新架构秒计时入口：把启动及后台返回时 4.5 至 8.5 秒的一次性广告计时缩短为 0.05 秒，随后仍由 App 自己进入首页；远程 FastImage 全屏图片、弹窗和网页推广仅在专用保护条件下清理，不启用通用网络拦截。";
     }
 
     BZMenuItem *version = [BZMenuItem valueItem:@"plugin.version" title:@"插件版本" value:BZABVersion];

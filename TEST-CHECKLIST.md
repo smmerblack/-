@@ -15,7 +15,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 - Guazi Video: version 1.1 (build `1`), expected bundle ID
   `com.Tajjwab.numberPulse`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.10.0-test10`
+- Expected menu version: `0.11.0-test11`
 
 ## Test each app
 
@@ -32,10 +32,10 @@ Use a clean copy of each app and keep the original IPA available for rollback.
    startup ad or five-second blank/placeholder screen.
 8. For Guazi Video, confirm the normal GUAZi brand loading screen may remain,
    but the full-screen “捕鱼王/无限暴击” advertisement never appears and the
-   homepage becomes interactive near the former 3.5-second ad-start point,
-   rather than after roughly 10.43 seconds from tapping the icon. These values
-   restore the approximately one-second black segment trimmed from the test9
-   screen recording; the advertisement itself lasted about 6.97 seconds.
+   homepage becomes interactive near the former 4.13-second ad-start point,
+   rather than after roughly 11.20 seconds from tapping the icon. These values
+   come from the untrimmed test10 screen recording; the advertisement itself
+   lasted about 7.07 seconds and the popup appeared around 12.10 seconds.
    Confirm the “GUAZi × 1P游戏” popup is closed and the homepage promotion tiles
    labelled PG官方/开元棋牌/P直播/全国空降/新葡京/同城小姐/免费约妞 are no longer
    visible. Normal film cards, categories, search, playback, tabs, and account

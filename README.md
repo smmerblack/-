@@ -1,7 +1,7 @@
-# BZAdBlocker test10
+# BZAdBlocker test11
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This ninth test build combines a conservative
+advertisements in iOS apps. This eleventh test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
@@ -55,17 +55,19 @@ injection. The dylib itself supports iOS 13.0 and later.
   view is created. `QADPauseViewController.showView` and
   `QADPauseContainView.showPauseItem:reportHandler:` provide presentation-layer
   fallbacks without changing the normal video player's pause controls.
-- Uses both Guazi Video 1.1 React Native `RCTTiming` bridge signatures to
-  fast-forward non-repeating 4.5–8.5 second timers during the
-  launch/foreground protection window. The expanded range covers the 6.97
-  second advertisement measured in the test9 screen recording. The original
-  JavaScript completion callback still runs after 50 ms, so navigation reaches
-  the homepage instead of merely hiding an advertisement while retaining its
-  timeout.
-- Provides Guazi-specific fallbacks for remote full-screen React Native images
-  and WebViews during the protection window. Web content receives a narrowly
-  scoped cleanup script for the supplied close text and homepage promotion
-  labels; ordinary video and first-party initialization are not network-blocked.
+- Uses both Guazi Video 1.1 React Native `RCTTiming` signatures during the
+  launch/foreground protection window. The legacy bridge passes milliseconds,
+  while the new-architecture `ObjCTimerRegistry` passes seconds; test11 handles
+  `4500–8500 ms` and `4.5–8.5 s` separately and forwards each as 50 ms. This
+  covers the 7.07-second advertisement measured in the untrimmed test10 screen
+  recording. The original JavaScript completion callback still runs, so the
+  App reaches its homepage instead of merely hiding the advertisement while
+  retaining its timeout.
+- Provides Guazi-specific fallbacks for remote full-screen React Native images,
+  `FFFastImageView` content, and WebViews during the protection window. Web
+  content receives a narrowly scoped cleanup script for the supplied close text
+  and homepage promotion labels; ordinary video and first-party initialization
+  are not network-blocked.
 - Closes Guazi's React Native popup advertisement and hides homepage promotion
   tiles only when at least two app-specific labels from the supplied sample are
   present. Single generic words such as “直播” or “更多” are not sufficient.

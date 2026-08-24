@@ -60,7 +60,7 @@ def main() -> None:
         for path in (ROOT / "Sources/BZAdBlocker").glob("*.[mh]")
     )
     for marker in [
-        'NSString * const BZABVersion = @"0.10.0-test10"',
+        'NSString * const BZABVersion = @"0.11.0-test11"',
         '@"com.sina"',
         '@"cn.10086.app"',
         '@"com.taobao.taobao4iphone"',
@@ -103,10 +103,16 @@ def main() -> None:
         'RCTTiming',
         'createTimer:duration:jsSchedulingTime:repeats:',
         'setTextStorage:contentFrame:descendantViews:',
-        'RCTTiming.guazi-seven-second-fast-forward',
+        'RCTTiming.guazi-legacy-ms-fast-forward',
+        'RCTTiming.guazi-new-arch-seconds-fast-forward',
         'createTimerForNextFrame:duration:jsSchedulingTime:repeats:',
         'duration >= 4500.0 && duration <= 8500.0',
+        'duration >= 4.5 && duration <= 8.5',
         'forwardedDuration = 50.0',
+        'forwardedDuration = 0.05',
+        '@"fffastimageview"',
+        'NSSelectorFromString(@"source")',
+        'NSSelectorFromString(@"url")',
         '@"关闭广告"',
         '@"PG官方"',
         '@"开元棋牌"',
@@ -157,7 +163,7 @@ def main() -> None:
     print(
         f"validated {len(objc_files)} Objective-C files; "
         "profiles=com.sina,cn.10086.app,com.taobao.taobao4iphone,"
-        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.10.0-test10"
+        "com.tencent.live4iphone,com.Tajjwab.numberPulse; version=0.11.0-test11"
     )
 
 

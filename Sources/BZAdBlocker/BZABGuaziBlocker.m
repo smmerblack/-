@@ -81,14 +81,23 @@ static BOOL BZABGuaziObjectTimerMethodMatches(Method method) {
            BZABGuaziArgumentMatches(method, 5, "Bc");
 }
 
-static BOOL BZABGuaziShouldFastForwardTimer(double duration, BOOL repeats) {
+static BOOL BZABGuaziShouldFastForwardNumericTimer(double duration,
+                                                   BOOL repeats) {
     return BZABGuaziShouldBlockAds() &&
            BZABIsInsideSuppressionWindow() &&
            !repeats &&
            duration >= 4500.0 && duration <= 8500.0;
 }
 
-static void BZABGuaziRecordTimerSkipOnce(id object) {
+static BOOL BZABGuaziShouldFastForwardObjectTimer(double duration,
+                                                  BOOL repeats) {
+    return BZABGuaziShouldBlockAds() &&
+           BZABIsInsideSuppressionWindow() &&
+           !repeats &&
+           duration >= 4.5 && duration <= 8.5;
+}
+
+static void BZABGuaziRecordTimerSkipOnce(id object, NSString *marker) {
     NSUInteger generation = BZABCurrentSuppressionGeneration();
     NSNumber *recordedGeneration = objc_getAssociatedObject(
         object,
@@ -100,8 +109,7 @@ static void BZABGuaziRecordTimerSkipOnce(id object) {
                              BZABGuaziTimerGenerationKey,
                              @(generation),
                              OBJC_ASSOCIATION_RETAIN_NONATOMIC);
-    [BZABStats.sharedStats recordTriggeredSkipWithClass:
-        @"RCTTiming.guazi-seven-second-fast-forward"];
+    [BZABStats.sharedStats recordTriggeredSkipWithClass:marker];
 }
 
 static void BZABGuaziCreateTimer(id object,
@@ -111,9 +119,11 @@ static void BZABGuaziCreateTimer(id object,
                                  double jsSchedulingTime,
                                  BOOL repeats) {
     double forwardedDuration = duration;
-    if (BZABGuaziShouldFastForwardTimer(duration, repeats)) {
+    if (BZABGuaziShouldFastForwardNumericTimer(duration, repeats)) {
         forwardedDuration = 50.0;
-        BZABGuaziRecordTimerSkipOnce(object);
+        BZABGuaziRecordTimerSkipOnce(
+            object,
+            @"RCTTiming.guazi-legacy-ms-fast-forward");
         BZABLog(@"fast-forwarded Guazi one-shot timer duration=%.0fms",
                 duration);
     }
@@ -136,10 +146,12 @@ static void BZABGuaziCreateObjectTimer(id object,
                                        id jsSchedulingTime,
                                        BOOL repeats) {
     double forwardedDuration = duration;
-    if (BZABGuaziShouldFastForwardTimer(duration, repeats)) {
-        forwardedDuration = 50.0;
-        BZABGuaziRecordTimerSkipOnce(object);
-        BZABLog(@"fast-forwarded Guazi object timer duration=%.0fms",
+    if (BZABGuaziShouldFastForwardObjectTimer(duration, repeats)) {
+        forwardedDuration = 0.05;
+        BZABGuaziRecordTimerSkipOnce(
+            object,
+            @"RCTTiming.guazi-new-arch-seconds-fast-forward");
+        BZABLog(@"fast-forwarded Guazi object timer duration=%.3fs",
                 duration);
     }
 
@@ -352,13 +364,20 @@ static BOOL BZABGuaziIsRemoteAdMediaView(UIView *view) {
         return YES;
     }
     NSString *className = NSStringFromClass(view.class).lowercaseString;
-    if (![className containsString:@"rctimageview"]) {
-        return NO;
+    if ([className containsString:@"fffastimageview"]) {
+        id source = BZABGuaziObjectGetter(view,
+            NSSelectorFromString(@"source"));
+        id url = BZABGuaziObjectGetter(source,
+            NSSelectorFromString(@"url"));
+        return [[[url description] lowercaseString] containsString:@"http"];
     }
-    id sources = BZABGuaziObjectGetter(view,
-        NSSelectorFromString(@"imageSources"));
-    NSString *description = [sources description].lowercaseString;
-    return [description containsString:@"http"];
+    if ([className containsString:@"rctimageview"]) {
+        id sources = BZABGuaziObjectGetter(view,
+            NSSelectorFromString(@"imageSources"));
+        NSString *description = [sources description].lowercaseString;
+        return [description containsString:@"http"];
+    }
+    return NO;
 }
 
 static NSString *BZABGuaziWebCleanupScript(void) {
@@ -892,7 +911,11 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
         CGRect visibleFrame = CGRectIntersection(frame, window.bounds);
         CGFloat area = MAX(0.0, CGRectGetWidth(visibleFrame)) *
                        MAX(0.0, CGRectGetHeight(visibleFrame));
-        if (area / windowArea >= 0.72 && depth <= 3) {
+        if (area / windowArea >= 0.72 && depth <= 6) {
+            largeCandidate = candidate;
+        } else if (centeredPopupMedia &&
+                   area / windowArea >= mediaRatio * 0.90 &&
+                   area / windowArea <= 0.70) {
             largeCandidate = candidate;
         }
     }
