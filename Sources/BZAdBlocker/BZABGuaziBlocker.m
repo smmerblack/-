@@ -89,14 +89,6 @@ static BOOL BZABGuaziShouldFastForwardNumericTimer(double duration,
            duration >= 4500.0 && duration <= 8500.0;
 }
 
-static BOOL BZABGuaziShouldFastForwardObjectTimer(double duration,
-                                                  BOOL repeats) {
-    return BZABGuaziShouldBlockAds() &&
-           BZABIsInsideSuppressionWindow() &&
-           !repeats &&
-           duration >= 4.5 && duration <= 8.5;
-}
-
 static void BZABGuaziRecordTimerSkipOnce(id object, NSString *marker) {
     NSUInteger generation = BZABCurrentSuppressionGeneration();
     NSNumber *recordedGeneration = objc_getAssociatedObject(
@@ -145,22 +137,12 @@ static void BZABGuaziCreateObjectTimer(id object,
                                        double duration,
                                        id jsSchedulingTime,
                                        BOOL repeats) {
-    double forwardedDuration = duration;
-    if (BZABGuaziShouldFastForwardObjectTimer(duration, repeats)) {
-        forwardedDuration = 0.05;
-        BZABGuaziRecordTimerSkipOnce(
-            object,
-            @"RCTTiming.guazi-new-arch-seconds-fast-forward");
-        BZABLog(@"fast-forwarded Guazi object timer duration=%.3fs",
-                duration);
-    }
-
     if (BZABGuaziOriginalCreateObjectTimer) {
         ((void (*)(id, SEL, id, double, id, BOOL))
             BZABGuaziOriginalCreateObjectTimer)(object,
                                                 selector,
                                                 callbackID,
-                                                forwardedDuration,
+                                                duration,
                                                 jsSchedulingTime,
                                                 repeats);
     }
@@ -364,13 +346,6 @@ static BOOL BZABGuaziIsRemoteAdMediaView(UIView *view) {
         return YES;
     }
     NSString *className = NSStringFromClass(view.class).lowercaseString;
-    if ([className containsString:@"fffastimageview"]) {
-        id source = BZABGuaziObjectGetter(view,
-            NSSelectorFromString(@"source"));
-        id url = BZABGuaziObjectGetter(source,
-            NSSelectorFromString(@"url"));
-        return [[[url description] lowercaseString] containsString:@"http"];
-    }
     if ([className containsString:@"rctimageview"]) {
         id sources = BZABGuaziObjectGetter(view,
             NSSelectorFromString(@"imageSources"));
@@ -911,11 +886,7 @@ static NSArray<UIWindow *> *BZABGuaziApplicationWindows(void) {
         CGRect visibleFrame = CGRectIntersection(frame, window.bounds);
         CGFloat area = MAX(0.0, CGRectGetWidth(visibleFrame)) *
                        MAX(0.0, CGRectGetHeight(visibleFrame));
-        if (area / windowArea >= 0.72 && depth <= 6) {
-            largeCandidate = candidate;
-        } else if (centeredPopupMedia &&
-                   area / windowArea >= mediaRatio * 0.90 &&
-                   area / windowArea <= 0.70) {
+        if (area / windowArea >= 0.72 && depth <= 3) {
             largeCandidate = candidate;
         }
     }

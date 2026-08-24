@@ -1,7 +1,7 @@
-# BZAdBlocker test11
+# BZAdBlocker test12
 
 An injectable Objective-C dynamic library for suppressing startup
-advertisements in iOS apps. This eleventh test build combines a conservative
+advertisements in iOS apps. This twelfth test build combines a conservative
 generic engine with profiles for:
 
 - 新浪邮箱 3.3.16 (`com.sina`)
@@ -55,24 +55,28 @@ injection. The dylib itself supports iOS 13.0 and later.
   view is created. `QADPauseViewController.showView` and
   `QADPauseContainView.showPauseItem:reportHandler:` provide presentation-layer
   fallbacks without changing the normal video player's pause controls.
-- Uses both Guazi Video 1.1 React Native `RCTTiming` signatures during the
-  launch/foreground protection window. The legacy bridge passes milliseconds,
-  while the new-architecture `ObjCTimerRegistry` passes seconds; test11 handles
-  `4500–8500 ms` and `4.5–8.5 s` separately and forwards each as 50 ms. This
-  covers the 7.07-second advertisement measured in the untrimmed test10 screen
-  recording. The original JavaScript completion callback still runs, so the
-  App reaches its homepage instead of merely hiding the advertisement while
-  retaining its timeout.
-- Provides Guazi-specific fallbacks for remote full-screen React Native images,
-  `FFFastImageView` content, and WebViews during the protection window. Web
-  content receives a narrowly scoped cleanup script for the supplied close text
-  and homepage promotion labels; ordinary video and first-party initialization
-  are not network-blocked.
+- Uses the Guazi Video 1.1 capture to block only `/App/Ad/*` and
+  `/App/IndexList/homeFloatAd`, regardless of the rotating API hostname. Each
+  match receives an immediate HTTP 200 business response with a non-success ad
+  code and no ad data. Other API paths, media cards, login, and homepage
+  initialization remain untouched.
+- The capture tied `/App/Ad/splashInfo` to the supplied 920×1994 full-screen
+  splash and `/App/Ad/activityInfo` to the 1000×1380 popup. It also identified
+  the app's ad config, banner, notice, vajra, skit, bars-index, and floating-home
+  endpoints under the two exact path families above.
+- Reverts test11's broad acceleration of 4.5–8.5 second new-architecture React
+  Native timers, which could also match a normal homepage initialization timer
+  and produce a black screen. test12 leaves object timers unchanged and keeps
+  only the already-safe legacy millisecond fallback from test10.
+- Restores test10's conservative React Native image geometry. Web and text
+  cleanup remain narrow fallbacks for the supplied close text and homepage
+  promotion labels.
 - Closes Guazi's React Native popup advertisement and hides homepage promotion
   tiles only when at least two app-specific labels from the supplied sample are
   present. Single generic words such as “直播” or “更多” are not sufficient.
-- Keeps Guazi on a dedicated path: the generic URL protocol, SDK enumeration,
-  and broad class-name suppression are not installed in this app.
+- Keeps Guazi on a dedicated path: only its exact captured ad paths use the URL
+  protocol; generic domain/path heuristics, SDK enumeration, and broad
+  class-name suppression are not installed in this app.
 - Protects common login, mail, account, billing, payment, recharge, and order
   paths from first-party heuristic blocking.
 - Provides BZMenuKit controls without a persistent floating button. Open the
@@ -118,11 +122,11 @@ pause-ad loading/presentation. Normal playback, manual pause/resume, player
 controls, login, VIP, casting, download, PiP, and homepage initialization are
 left on the app's original paths.
 
-For Guazi Video, the dedicated path keeps React Native's own timer callback and
-homepage initialization intact. Its popup/home cleanup is intentionally tied to
-the labels observed in version 1.1. If a future CodePush update changes those
-labels or moves the ad decision into a different JavaScript timer, the rule must
-be re-profiled against that current `app.jsbundle`.
+For Guazi Video, the dedicated path keeps React Native timers and homepage
+initialization intact. Its request rules are intentionally tied to the semantic
+ad paths observed in version 1.1 rather than to the currently selected API
+hostname. If a future update changes those paths, the rule must be re-profiled
+from a new capture.
 
 ## Custom domains
 

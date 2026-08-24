@@ -36,6 +36,8 @@ static void BZABBootstrap(void) {
             [BZABSDKBlocker install];
             [BZABNetworkBlocker install];
             [BZABViewBlocker install];
+        } else if (guaziTarget) {
+            [BZABNetworkBlocker install];
         }
 
         NSTimeInterval setupDelay = dedicatedTarget ? 1.0 : 0.0;

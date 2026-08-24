@@ -82,6 +82,7 @@ static BOOL BZABHostLooksLikeDedicatedAdHost(NSString *host) {
 
 @interface BZABNetworkBlocker ()
 + (void)addProtocolToConfiguration:(NSURLSessionConfiguration *)configuration;
++ (BOOL)isGuaziCapturedAdAPIURL:(NSURL *)URL;
 @end
 
 @implementation BZABURLProtocol
@@ -106,6 +107,31 @@ static BOOL BZABHostLooksLikeDedicatedAdHost(NSString *host) {
     NSString *host = URL.host.lowercaseString ?: @"unknown";
     [BZABStats.sharedStats recordBlockedHost:host];
     BZABLog(@"blocked request host=%@", host);
+
+    if ([BZABNetworkBlocker isGuaziCapturedAdAPIURL:URL]) {
+        NSData *body = [@"{\"code\":404,\"msg\":\"no ad\",\"data\":null}"
+            dataUsingEncoding:NSUTF8StringEncoding];
+        NSDictionary<NSString *, NSString *> *headers = @{
+            @"Cache-Control": @"no-store",
+            @"Content-Type": @"application/json; charset=utf-8",
+            @"Content-Length": [NSString stringWithFormat:@"%lu",
+                (unsigned long)body.length],
+            @"X-BZAdBlocker": @"1"
+        };
+        NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc]
+            initWithURL:URL
+            statusCode:200
+            HTTPVersion:@"HTTP/1.1"
+            headerFields:headers];
+        [BZABStats.sharedStats recordTriggeredSkipWithClass:
+            @"Guazi.captured-ad-api-no-content"];
+        [self.client URLProtocol:self
+             didReceiveResponse:response
+             cacheStoragePolicy:NSURLCacheStorageNotAllowed];
+        [self.client URLProtocol:self didLoadData:body];
+        [self.client URLProtocolDidFinishLoading:self];
+        return;
+    }
 
     NSHTTPURLResponse *response = [[NSHTTPURLResponse alloc]
         initWithURL:URL
@@ -146,6 +172,16 @@ static BOOL BZABHostLooksLikeDedicatedAdHost(NSString *host) {
 
 @implementation BZABNetworkBlocker
 
++ (BOOL)isGuaziCapturedAdAPIURL:(NSURL *)URL {
+    if (![NSBundle.mainBundle.bundleIdentifier
+            isEqualToString:@"com.Tajjwab.numberPulse"]) {
+        return NO;
+    }
+    NSString *path = URL.path.lowercaseString ?: @"";
+    return [path hasPrefix:@"/app/ad/"] ||
+           [path isEqualToString:@"/app/indexlist/homefloatad"];
+}
+
 + (void)addProtocolToConfiguration:(NSURLSessionConfiguration *)configuration {
     NSArray<Class> *existing = configuration.protocolClasses ?: @[];
     if ([existing containsObject:BZABURLProtocol.class]) {
@@ -177,6 +213,11 @@ static BOOL BZABHostLooksLikeDedicatedAdHost(NSString *host) {
     NSString *host = URL.host.lowercaseString ?: @"";
     if (host.length == 0) {
         return NO;
+    }
+
+    if ([NSBundle.mainBundle.bundleIdentifier
+            isEqualToString:@"com.Tajjwab.numberPulse"]) {
+        return [self isGuaziCapturedAdAPIURL:URL];
     }
 
     if (BZABHostMatchesAnyDomain(host, BZABDedicatedAdDomains())) {

@@ -15,7 +15,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 - Guazi Video: version 1.1 (build `1`), expected bundle ID
   `com.Tajjwab.numberPulse`
 - Dylib: `BZAdBlocker.dylib`, arm64, minimum iOS 13.0
-- Expected menu version: `0.11.0-test11`
+- Expected menu version: `0.12.0-test12`
 
 ## Test each app
 
@@ -32,14 +32,11 @@ Use a clean copy of each app and keep the original IPA available for rollback.
    startup ad or five-second blank/placeholder screen.
 8. For Guazi Video, confirm the normal GUAZi brand loading screen may remain,
    but the full-screen “捕鱼王/无限暴击” advertisement never appears and the
-   homepage becomes interactive near the former 4.13-second ad-start point,
-   rather than after roughly 11.20 seconds from tapping the icon. These values
-   come from the untrimmed test10 screen recording; the advertisement itself
-   lasted about 7.07 seconds and the popup appeared around 12.10 seconds.
-   Confirm the “GUAZi × 1P游戏” popup is closed and the homepage promotion tiles
-   labelled PG官方/开元棋牌/P直播/全国空降/新葡京/同城小姐/免费约妞 are no longer
-   visible. Normal film cards, categories, search, playback, tabs, and account
-   pages must remain usable.
+   former seven-second ad wait is gone. Confirm the “GUAZi × 1P游戏” popup
+   does not appear and the homepage promotion content supplied by
+   `homeFloatAd` is absent. Normal film cards, categories, search, playback,
+   tabs, and account pages must remain usable. Open the menu and confirm
+   **已拦截请求** and **已触发跳过** are greater than zero.
 9. Leave the app open for at least 30 seconds, switch to another app, wait five
    seconds, and return. Repeat three times and confirm the resume ad is skipped.
 10. Confirm account login still works.
@@ -60,7 +57,7 @@ Use a clean copy of each app and keep the original IPA available for rollback.
 19. In Tencent Video, confirm **当前规则** reads
     **腾讯视频 9.04.31 开屏/返回/暂停广告直跳**.
 20. In Guazi Video, confirm **当前规则** reads
-    **瓜子影视 1.1 开屏/返回直跳 + 弹窗/首页清理**.
+    **瓜子影视 1.1 精确接口去广告**.
 21. In China Mobile, confirm login state, privacy agreement on a clean install,
     app-update prompts, and push/deep-link launches still work; these flows must
     not be bypassed by the direct-entry hook.
